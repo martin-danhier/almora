@@ -2,34 +2,31 @@ use std::{error::Error, fmt::Display};
 
 #[derive(Debug)]
 pub enum CharBufferErrorType {
-    NotEnoughSpace,
+    
 }
 
 #[derive(Debug)]
-pub struct CharBufferError<'a> {
-    pub c: &'a str,
-    errorType: CharBufferErrorType,
+pub enum CharBufferError {
+    NotInBuffer(usize),
+    NotEnoughSpace(char),
+    Empty,
 }
 
-impl<'a> CharBufferError<'a> {
-    pub fn new(c: &'a str, errorType: CharBufferErrorType) -> Self {
-        CharBufferError { c, errorType }
-    }
-}
-
-impl<'a> Display for CharBufferError<'a> {
+impl Display for CharBufferError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only create messages when we want to print them
-        match self.errorType {
-            CharBufferErrorType::NotEnoughSpace => {
+        match self {
+            Self::NotEnoughSpace(c) => {
                 write!(
                     f,
                     "Not enough space in the buffer to push the char {}",
-                    self.c
+                    c
                 )
-            }
+            },
+            Self::Empty => write!(f, "The buffer is empty"),
+            Self::NotInBuffer(pos) => write!(f, "The char at position {} is not in the buffer", pos),
         }
     }
 }
 
-impl<'a> Error for CharBufferError<'a> {}
+impl Error for CharBufferError {}

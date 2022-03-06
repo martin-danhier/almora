@@ -1,84 +1,92 @@
-use std::error::Error;
+use super::{CharBufferError};
 
-use crate::utils::ReadUTF8;
-
-use super::{CharBufferError, CharBufferErrorType};
-
+/// Ring buffer for storing chars.
 pub struct CharBuffer {
-    buf: Vec<u8>,
+    buf: Vec<char>,
     /// Where to read from next
     read_pos: usize,
     /// Where to write the next character.
     write_pos: usize,
-    /// Number of chars in the buffer
+    /// Number of chars in the buffer.
     size: usize,
-    /// Number of bytes in the buffer
-    byte_size: usize,
 }
 
 impl CharBuffer {
     pub fn new(capacity: usize) -> Self {
         CharBuffer {
-            buf: vec![0; capacity],
+            buf: vec!['\0'; capacity],
             read_pos: 0,
             write_pos: 0,
             size: 0,
-            byte_size: 0,
         }
     }
 
-    /// Pushes an unicode character to the buffer.
-    ///
-    /// An unicode char is a sequence of up to 4 bytes.
-    ///
-    /// Wraps around the buffer if necessary, but does not split the char in two parts.
-    ///
-    /// For example, if a 4 byte char is pushed, but there is only 2 slots
-    /// left at the end of the buffer, the buffer will directly wrap around.
-    /// This allows to return a slice from the buffer itself and avoid a memory allocation.
-    pub fn push<'a>(&mut self, c: &'a str) -> Result<(), CharBufferError<'a>> {
-        let c_len = c.len();
+    // Getters
 
-        // If there is not enough space at the write index, fill with 0 and wrap around
-        if self.write_pos + c_len >= self.buf.capacity() {
+    #[inline]
+    pub fn capacity(&self) -> usize {
+        self.buf.capacity()
+    }
 
-            // If there is not enough space for the new char, return an error
-            // Since there will be 0s from write_pos to the end, its as if write_pos is the new capacity
-            if self.byte_size + c_len >= self.write_pos {
-                return Err(CharBufferError::new(c, CharBufferErrorType::NotEnoughSpace));
-            }
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size
+    }
 
-            // Fill the rest of the buffer with 0s
-            for i in self.write_pos..self.buf.capacity() {
-                self.buf[i] = 0;
-            }
-            self.byte_size += self.buf.capacity() - self.write_pos;
+    // Methods
+    pub fn push(&mut self, c: char) -> Result<(), CharBufferError> {
+        if self.size() == self.capacity() {
+            return Err(CharBufferError::NotEnoughSpace(c));
+        }
+
+        self.buf[self.write_pos] = c;
+        // Increase write_pos and size and wrap around if necessary
+        self.write_pos += 1;
+        if self.write_pos == self.capacity() {
             self.write_pos = 0;
         }
-        // If there is enough space, just copy the bytes
-        else {
-            // If there is not enough space for the new char, return an error
-            if self.byte_size + c_len >= self.buf.capacity() {
-                return Err(CharBufferError::new(c, CharBufferErrorType::NotEnoughSpace));
-            }
-
-            // Copy bytes
-            for i in 0..c_len {
-                self.buf[self.write_pos + i] = c.as_bytes()[i];
-            }
-            self.byte_size += c_len;
-            self.write_pos += c_len;
-        }
+        // Increase size
+        self.size += 1;
 
         Ok(())
     }
 
-    pub fn consume(&mut self, n: usize) {}
-}
+    pub fn pop(&mut self) -> Option<char> {
+        if self.size() == 0 {
+            return None;
+        }
 
-impl<'a> ReadUTF8<'a> for CharBuffer {
-    fn get_utf8(&'a self, start_index: usize) -> Option<(&'a str, usize)> {
-        // Get the next utf8 character, wrapping around if necessary
+        let c = self.buf[self.read_pos];
+        // Increase read_pos and size and wrap around if necessary
+        self.read_pos += 1;
+        if self.read_pos == self.capacity() {
+            self.read_pos = 0;
+        }
+        // Decrease size
+        self.size -= 1;
+
+        Some(c)
+    }
+
+    pub fn peek(&self) -> Option<char> {
+        if self.size() == 0 {
+            return None;
+        }
+
+        Some(self.buf[self.read_pos])
+    }
+
+    pub fn peek_nth(&self, n: usize) -> Option<char> {
+        if self.size() == 0 {
+            return None;
+        }
+
+        if n >= self.size() {
+            return None;
+        }
+
+        let pos = (self.read_pos + n) % self.capacity();
+        Some(self.buf[pos])
     }
 }
 
@@ -87,11 +95,143 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_buffer() {
-        let buffer = CharBuffer::new(10);
+    fn test_init() {
+        let cb = CharBuffer::new(10);
 
-        assert!(buffer.buf.len() == 10);
-        assert!(buffer.pos == 0);
-        assert!(buffer.buf.iter().all(|&x| x == 0));
+        assert_eq!(cb.capacity(), 10);
+        assert_eq!(cb.read_pos, 0);
+        assert_eq!(cb.write_pos, 0);
+
+        for c in cb.buf {
+            assert_eq!(c, '\0');
+        }
     }
+
+    #[test]
+    fn test_push() {
+        let mut cb = CharBuffer::new(5);
+
+        // Move head to middle so we can test wrapping
+        cb.write_pos = 2;
+
+        assert_eq!(cb.size(), 0);
+
+        assert_eq!(cb.push('h').is_ok(), true);
+        assert_eq!(cb.size(), 1);
+        assert_eq!(cb.write_pos, 3);
+        assert_eq!(cb.buf[2], 'h');
+
+        assert_eq!(cb.push('e').is_ok(), true);
+        assert_eq!(cb.size(), 2);
+        assert_eq!(cb.write_pos, 4);
+        assert_eq!(cb.buf[3], 'e');
+
+        assert_eq!(cb.push('l').is_ok(), true);
+        assert_eq!(cb.size(), 3);
+        assert_eq!(cb.write_pos, 0);
+        assert_eq!(cb.buf[4], 'l');
+
+        assert_eq!(cb.push('l').is_ok(), true);
+        assert_eq!(cb.size(), 4);
+        assert_eq!(cb.write_pos, 1);
+        assert_eq!(cb.buf[0], 'l');
+
+        assert_eq!(cb.push('o').is_ok(), true);
+        assert_eq!(cb.size(), 5);
+        assert_eq!(cb.write_pos, 2);
+        assert_eq!(cb.buf[1], 'o');
+
+        // Now we should be full
+        assert_eq!(cb.push('!').is_ok(), false);
+    }
+
+    #[test]
+    fn test_pop() {
+        let mut cb = CharBuffer::new(5);
+
+        // Move head to middle so we can test wrapping
+        cb.read_pos = 2;
+        cb.write_pos = 2;
+
+        // First, its empty
+        assert_eq!(cb.size(), 0);
+        assert_eq!(cb.pop().is_none(), true);
+
+        // Now we push some chars
+        assert_eq!(cb.push('h').is_ok(), true);
+        assert_eq!(cb.push('e').is_ok(), true);
+
+        // Now we should have 2 chars
+        assert_eq!(cb.size(), 2);
+
+        // Pop the first char
+        assert_eq!(cb.pop().unwrap(), 'h');
+        assert_eq!(cb.size(), 1);
+        assert_eq!(cb.read_pos, 3);
+
+        // Pop the second char
+        assert_eq!(cb.pop().unwrap(), 'e');
+        assert_eq!(cb.size(), 0);
+        assert_eq!(cb.read_pos, 4);
+
+        // Now we should be empty
+        assert_eq!(cb.pop().is_none(), true);
+
+        // Now we push some more chars
+        assert_eq!(cb.push('h').is_ok(), true);
+        assert_eq!(cb.push('e').is_ok(), true);
+        assert_eq!(cb.push('l').is_ok(), true);
+        assert_eq!(cb.push('l').is_ok(), true);
+        assert_eq!(cb.push('o').is_ok(), true);
+
+        // Now we should have 5 chars
+        assert_eq!(cb.size(), 5);
+
+        // Pop the first char
+        assert_eq!(cb.pop().unwrap(), 'h');
+        assert_eq!(cb.size(), 4);
+        assert_eq!(cb.read_pos, 0);
+
+        // Pop the second char
+        assert_eq!(cb.pop().unwrap(), 'e');
+        assert_eq!(cb.size(), 3);
+        assert_eq!(cb.read_pos, 1);
+    }
+
+    #[test]
+    fn test_peek() {
+        let mut cb = CharBuffer::new(5);
+
+        // Move head to middle so we can test wrapping
+        cb.read_pos = 2;
+        cb.write_pos = 2;
+
+        // First, its empty
+        assert_eq!(cb.size(), 0);
+        assert_eq!(cb.peek().is_none(), true);
+
+        // Now we push some chars
+        assert_eq!(cb.push('h').is_ok(), true);
+        assert_eq!(cb.push('e').is_ok(), true);
+
+        // Now we should have 2 chars
+        assert_eq!(cb.size(), 2);
+
+        // Peek the first char
+        assert_eq!(cb.peek().unwrap(), 'h');
+        assert_eq!(cb.size(), 2);
+        assert_eq!(cb.read_pos, 2);
+
+        // Peek with nth
+        assert_eq!(cb.peek_nth(0).unwrap(), 'h');
+        assert_eq!(cb.size(), 2);
+        assert_eq!(cb.read_pos, 2);
+
+        assert_eq!(cb.peek_nth(1).unwrap(), 'e');
+        assert_eq!(cb.size(), 2);
+        assert_eq!(cb.read_pos, 2);
+
+        assert_eq!(cb.peek_nth(2).is_none(), true);
+    }
+
 }
