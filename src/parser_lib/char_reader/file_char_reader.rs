@@ -1,8 +1,8 @@
 use std::{error::Error, fs::File, io::Read};
 
-use crate::utils::CharBuffer;
+use crate::{utils::RingBuffer, parser_lib::Stream};
 
-use super::{utils::TryIntoChar, ReadChar};
+use super::{utils::TryIntoChar};
 
 /// Char reader that streams characters from a file.
 /// Doesn't load the whole file into memory.
@@ -12,7 +12,7 @@ pub struct FileCharReader {
     /// The file to read from.
     file: File,
     /// The buffer of characters.
-    buffer: CharBuffer,
+    buffer: RingBuffer<char>,
     /// Number of UTF-8 characters read from the buffer (head).
     nb_read_from_buffer: usize,
     /// Number of UTF-8 characters read from the file (tail).
@@ -24,7 +24,7 @@ impl FileCharReader {
     pub fn new(filepath: &str, buffer_size: usize) -> Result<Self, Box<dyn Error>> {
         Ok(FileCharReader {
             file: File::open(filepath)?,
-            buffer: CharBuffer::new(buffer_size),
+            buffer: RingBuffer::new(buffer_size),
             nb_read_from_file: 0,
             nb_read_from_buffer: 0,
         })
@@ -104,7 +104,7 @@ impl FileCharReader {
     }
 }
 
-impl ReadChar for FileCharReader {
+impl Stream<char> for FileCharReader {
     fn peek(&mut self) -> Option<char> {
         // Ensure that the next char is loaded
         self.load_until(self.nb_read_from_buffer);

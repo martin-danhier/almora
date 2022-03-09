@@ -1,18 +1,12 @@
-use std::{error::Error, fmt::Display};
+use std::{error::Error, fmt::{Display, Debug}};
 
 #[derive(Debug)]
-pub enum CharBufferErrorType {
-    
-}
-
-#[derive(Debug)]
-pub enum CharBufferError {
+pub enum RingBufferError<T: Copy + Clone + Debug + Display> {
     NotInBuffer(usize),
-    NotEnoughSpace(char),
-    Empty,
+    NotEnoughSpace(T),
 }
 
-impl Display for CharBufferError {
+impl<T: Copy + Clone + Debug + Display> Display for RingBufferError<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only create messages when we want to print them
         match self {
@@ -23,10 +17,9 @@ impl Display for CharBufferError {
                     c
                 )
             },
-            Self::Empty => write!(f, "The buffer is empty"),
             Self::NotInBuffer(pos) => write!(f, "The char at position {} is not in the buffer", pos),
         }
     }
 }
 
-impl Error for CharBufferError {}
+impl<T: Copy + Clone + Debug + Display> Error for RingBufferError<T> {}

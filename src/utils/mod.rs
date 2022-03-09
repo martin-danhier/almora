@@ -1,3 +1,3 @@
-mod char_buffer;
+mod ring_buffer;
 
-pub use char_buffer::CharBuffer;
+pub use ring_buffer::RingBuffer;

@@ -1,8 +1,9 @@
-use super::{CharBufferError};
+use super::RingBufferError;
+use std::fmt::{Debug, Display};
 
-/// Ring buffer for storing chars.
-pub struct CharBuffer {
-    buf: Vec<char>,
+/// Ring buffer for storing values.
+pub struct RingBuffer<T: Copy + Clone + Debug + Display> {
+    buf: Vec<Option<T>>,
     /// Where to read from next
     read_pos: usize,
     /// Where to write the next character.
@@ -11,10 +12,10 @@ pub struct CharBuffer {
     size: usize,
 }
 
-impl CharBuffer {
+impl<T: Copy + Clone + Debug + Display> RingBuffer<T> {
     pub fn new(capacity: usize) -> Self {
-        CharBuffer {
-            buf: vec!['\0'; capacity],
+        RingBuffer {
+            buf: vec![None; capacity],
             read_pos: 0,
             write_pos: 0,
             size: 0,
@@ -34,12 +35,12 @@ impl CharBuffer {
     }
 
     // Methods
-    pub fn push(&mut self, c: char) -> Result<(), CharBufferError> {
+    pub fn push(&mut self, c: T) -> Result<(), RingBufferError<T>> {
         if self.size() == self.capacity() {
-            return Err(CharBufferError::NotEnoughSpace(c));
+            return Err(RingBufferError::NotEnoughSpace(c));
         }
 
-        self.buf[self.write_pos] = c;
+        self.buf[self.write_pos] = Some(c);
         // Increase write_pos and size and wrap around if necessary
         self.write_pos += 1;
         if self.write_pos == self.capacity() {
@@ -51,7 +52,7 @@ impl CharBuffer {
         Ok(())
     }
 
-    pub fn pop(&mut self) -> Option<char> {
+    pub fn pop(&mut self) -> Option<T> {
         if self.size() == 0 {
             return None;
         }
@@ -65,18 +66,18 @@ impl CharBuffer {
         // Decrease size
         self.size -= 1;
 
-        Some(c)
+        c
     }
 
-    pub fn peek(&self) -> Option<char> {
+    pub fn peek(&self) -> Option<T> {
         if self.size() == 0 {
             return None;
         }
 
-        Some(self.buf[self.read_pos])
+        self.buf[self.read_pos]
     }
 
-    pub fn peek_nth(&self, n: usize) -> Option<char> {
+    pub fn peek_nth(&self, n: usize) -> Option<T> {
         if self.size() == 0 {
             return None;
         }
@@ -86,7 +87,7 @@ impl CharBuffer {
         }
 
         let pos = (self.read_pos + n) % self.capacity();
-        Some(self.buf[pos])
+        self.buf[pos]
     }
 }
 
@@ -96,20 +97,20 @@ mod tests {
 
     #[test]
     fn test_init() {
-        let cb = CharBuffer::new(10);
+        let cb = RingBuffer::<char>::new(10);
 
         assert_eq!(cb.capacity(), 10);
         assert_eq!(cb.read_pos, 0);
         assert_eq!(cb.write_pos, 0);
 
         for c in cb.buf {
-            assert_eq!(c, '\0');
+            assert_eq!(c, None);
         }
     }
 
     #[test]
     fn test_push() {
-        let mut cb = CharBuffer::new(5);
+        let mut cb = RingBuffer::new(5);
 
         // Move head to middle so we can test wrapping
         cb.write_pos = 2;
@@ -119,27 +120,27 @@ mod tests {
         assert_eq!(cb.push('h').is_ok(), true);
         assert_eq!(cb.size(), 1);
         assert_eq!(cb.write_pos, 3);
-        assert_eq!(cb.buf[2], 'h');
+        assert_eq!(cb.buf[2], Some('h'));
 
         assert_eq!(cb.push('e').is_ok(), true);
         assert_eq!(cb.size(), 2);
         assert_eq!(cb.write_pos, 4);
-        assert_eq!(cb.buf[3], 'e');
+        assert_eq!(cb.buf[3], Some('e'));
 
         assert_eq!(cb.push('l').is_ok(), true);
         assert_eq!(cb.size(), 3);
         assert_eq!(cb.write_pos, 0);
-        assert_eq!(cb.buf[4], 'l');
+        assert_eq!(cb.buf[4], Some('l'));
 
         assert_eq!(cb.push('l').is_ok(), true);
         assert_eq!(cb.size(), 4);
         assert_eq!(cb.write_pos, 1);
-        assert_eq!(cb.buf[0], 'l');
+        assert_eq!(cb.buf[0], Some('l'));
 
         assert_eq!(cb.push('o').is_ok(), true);
         assert_eq!(cb.size(), 5);
         assert_eq!(cb.write_pos, 2);
-        assert_eq!(cb.buf[1], 'o');
+        assert_eq!(cb.buf[1], Some('o'));
 
         // Now we should be full
         assert_eq!(cb.push('!').is_ok(), false);
@@ -147,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_pop() {
-        let mut cb = CharBuffer::new(5);
+        let mut cb = RingBuffer::new(5);
 
         // Move head to middle so we can test wrapping
         cb.read_pos = 2;
@@ -200,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_peek() {
-        let mut cb = CharBuffer::new(5);
+        let mut cb = RingBuffer::new(5);
 
         // Move head to middle so we can test wrapping
         cb.read_pos = 2;
@@ -233,5 +234,4 @@ mod tests {
 
         assert_eq!(cb.peek_nth(2).is_none(), true);
     }
-
 }
