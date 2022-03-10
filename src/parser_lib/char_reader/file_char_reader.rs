@@ -1,6 +1,6 @@
 use std::{error::Error, fs::File, io::Read};
 
-use crate::{utils::RingBuffer, parser_lib::Stream};
+use crate::{utils::RingBuffer, parser_lib::{Stream, MatchStr, ParserError, ParseResult, Location}};
 
 use super::{utils::TryIntoChar};
 
@@ -8,6 +8,7 @@ use super::{utils::TryIntoChar};
 /// Doesn't load the whole file into memory.
 ///
 /// Maintains a buffer for peaked characters.
+#[derive(Debug)]
 pub struct FileCharReader {
     /// The file to read from.
     file: File,
@@ -76,6 +77,7 @@ impl FileCharReader {
                         char_i = 0;
                         char_buf = [0u8; 4];
                         chars_to_read -= 1;
+                        // Increment cursor
                         self.nb_read_from_file += 1;
                     }
                     // If it's not a valid char, we try by taking one more byte
@@ -125,7 +127,7 @@ impl Stream<char> for FileCharReader {
 
         let res = self.buffer.pop();
 
-        if res.is_some() {
+        if let Some(c) = res {
             self.nb_read_from_buffer += 1;
         }
 
@@ -152,6 +154,43 @@ impl Stream<char> for FileCharReader {
     fn is_eof(&mut self) -> bool {
         // EOF = enable to load next char
         self.load_until(self.nb_read_from_buffer) == false
+    }
+}
+
+impl MatchStr for FileCharReader {
+    fn match_str(&mut self, pos: usize, s: &str) -> Result<bool, ParserError> {
+        // Get the pos starting from the current position of the cursor
+
+        // This is a stream: we can look ahead, but we can't look behind chars that were already consumed
+        if pos < self.nb_read_from_buffer {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.nb_read_from_buffer;
+
+        // If the string is to far away or to big to fit in the buffer, we won't be able to look it ahead
+        if relative_pos + s.len() >= self.buffer.capacity() {
+            return Err(ParserError::LookAheadBufferOverflow(relative_pos + s.len()));
+        }
+
+        // Compare each char
+        let mut i = relative_pos;
+        for str_c in s.chars() {
+            if let Some(file_c) = self.peek_nth(i) {
+                if file_c != str_c {
+                    // If a difference is found, it's not equal
+                    return Ok(false);
+                }
+            }
+            else {
+                // If EOF is reached before the end of the string to compare, it's not equal
+                return Ok(false);
+            }
+            i += 1;
+        }
+
+        Ok(true)
     }
 }
 
@@ -251,9 +290,6 @@ mod tests {
         assert_eq!(reader.peek(), Some('e'));
         assert_eq!(reader.consume(), Some('e'));
 
-        assert_eq!(reader.peek(), None);
-        assert_eq!(reader.consume(), None);
-        assert_eq!(reader.is_eof(), true);
 
     }
 
@@ -264,5 +300,41 @@ mod tests {
         assert_eq!(reader.peek_nth(9), Some('h'));
         assert_eq!(reader.consume_nth(9), Some('h'));
         assert_eq!(reader.consume(), Some('i'));
+    }
+
+    #[test]
+    fn test_match_str() {
+        let mut reader = FileCharReader::new("resources/test_files/test.txt", 50).unwrap();
+
+        // Look ahead check should work
+        assert!(reader.match_str(8, "this").is_ok());
+        assert_eq!(reader.match_str(8, "this").unwrap(), true);
+
+        // But shifted by some chars it doesn't work anymore
+        assert!(reader.match_str(10, "this").is_ok());
+        assert_eq!(reader.match_str(10, "this").unwrap(), false);
+
+        // Since the buffer is big it even works when the word is far away
+        assert!(reader.match_str(39, "important").is_ok());
+        assert_eq!(reader.match_str(39, "important").unwrap(), true);
+
+        let mut reader = FileCharReader::new("resources/test_files/test.txt", 20).unwrap();
+
+        // But now that the buffer is small, this word is now unreachable.
+        // The number in the error is 39 (start index) + 9 (length of compared word) = 48
+        // Which is the index of the last checked char
+        assert!(reader.match_str(39, "important").is_err());
+        assert_eq!(reader.match_str(39, "important").unwrap_err(), ParserError::LookAheadBufferOverflow(48));
+
+        // We can still compare words at the beginning, since the cursor hasn't moved
+        assert!(reader.match_str(2, "hello").is_ok());
+        assert_eq!(reader.match_str(2, "hello").unwrap(), true);
+
+        // Now, let's try to consume some chars at the beginning
+        assert_eq!(reader.consume_nth(6), Some('o'));
+
+        // We shouldn't be able to access the "hello" word anymore
+        assert!(reader.match_str(2, "hello").is_err());
+        assert_eq!(reader.match_str(2, "hello").unwrap_err(), ParserError::NoLookBehind(2));
     }
 }

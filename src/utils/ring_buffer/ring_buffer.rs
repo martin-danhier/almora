@@ -2,6 +2,7 @@ use super::RingBufferError;
 use std::fmt::{Debug, Display};
 
 /// Ring buffer for storing values.
+#[derive(Debug)]
 pub struct RingBuffer<T: Copy + Clone + Debug + Display> {
     buf: Vec<Option<T>>,
     /// Where to read from next
