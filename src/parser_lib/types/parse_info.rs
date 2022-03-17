@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::Span;
+use super::{Span, Location};
 
 #[derive(Debug, PartialEq)]
 /// Information about a successful parse
@@ -23,6 +23,14 @@ impl ParseInfo {
 
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn start(&self) -> &Location {
+        self.span.start()
+    }
+
+    pub fn end(&self) -> &Location {
+        self.span.end()
     }
 }
 

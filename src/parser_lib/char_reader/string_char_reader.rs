@@ -81,6 +81,36 @@ impl MatchStr for StringCharReader {
 
         Ok(true)
     }
+
+    fn match_range(&mut self, pos: usize, start: char, end: char, max: u8) -> Result<u32, ParserError> {
+        if pos < self.cursor_index {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.cursor_index;
+
+        let mut matched = 0;
+
+        // Compare each char
+        let mut i = relative_pos;
+        while let Some(c) = self.peek_nth(i) {
+            // If a difference is found, or if we already have matched the max, we stop here
+            if c < start || c > end {
+                break;
+            }
+
+            // If there is a max and it is reached, we stop here
+            if max != 0 && matched >= max.into() {
+                break;
+            }
+
+            matched += 1;
+            i += 1;
+        }
+
+        Ok(matched)
+    }
 }
 
 #[cfg(test)]
@@ -187,5 +217,41 @@ mod tests {
         // We shouldn't be able to access the "hello" word anymore
         assert!(reader.match_str(2, "hello").is_err());
         assert_eq!(reader.match_str(2, "hello").unwrap_err(), ParserError::NoLookBehind(2));
+    }
+
+    #[test]
+    fn test_range() {
+        let mut reader = StringCharReader::new("😎 hello this is a file which is really important and useful");
+
+        // Look ahead check should work
+        assert!(reader.match_range(9, 'a', 'z', 1).is_ok());
+        assert_eq!(reader.match_range(9, 'a', 'z', 1).unwrap(), 1);
+
+        // But not capital
+        assert!(reader.match_range(9, 'A', 'Z', 1).is_ok());
+        assert_eq!(reader.match_range(9, 'A', 'Z', 1).unwrap(), 0);
+
+        // But not numbers
+        assert!(reader.match_range(9, '0', '9', 1).is_ok());
+        assert_eq!(reader.match_range(9, '0', '9', 1).unwrap(), 0);
+
+        // Space is no alpha numeric
+        assert!(reader.match_range(7, 'a', 'z', 1).is_ok());
+        assert_eq!(reader.match_range(7, 'a', 'z', 1).unwrap(), 0);
+
+        assert!(reader.match_range(7, 'A', 'Z', 1).is_ok());
+        assert_eq!(reader.match_range(7, 'A', 'Z', 1).unwrap(), 0);
+
+        assert!(reader.match_range(7, '0', '9', 1).is_ok());
+        assert_eq!(reader.match_range(7, '0', '9', 1).unwrap(), 0);
+
+        // Should also work for longer matches
+        // Here it can get words up to 10 chars, but it stops at the space so it only finds 4 chars
+        assert!(reader.match_range(8, 'a', 'z', 10).is_ok());
+        assert_eq!(reader.match_range(8, 'a', 'z', 10).unwrap(), 4);
+
+        // 0 is infinite max
+        assert!(reader.match_range(39, 'a', 'z', 0).is_ok());
+        assert_eq!(reader.match_range(39, 'a', 'z', 0).unwrap(), 9);
     }
 }

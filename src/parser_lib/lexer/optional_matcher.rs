@@ -1,15 +1,15 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 use crate::parser_lib::{MatchToken, MatchStr, ParseResult, CreateParseResult, Location};
 
 /// Matcher that returns true if the given matcher matches the string, or not
 #[derive(Debug)]
 pub struct OptionalMatcher<R: MatchStr> {
-    value: Box<dyn MatchToken<R>>
+    value: Rc<dyn MatchToken<R>>
 }
 
 impl<R: MatchStr> OptionalMatcher<R> {
-    pub fn new(value: Box<dyn MatchToken<R>>) -> Self {
+    pub fn new(value: Rc<dyn MatchToken<R>>) -> Self {
         Self {
             value
         }
@@ -45,7 +45,7 @@ mod tests {
 
     #[test]
     fn test_optional_matcher() {
-        let rule = OptionalMatcher::new(Box::new(StrMatcher::new("hello")));
+        let rule = OptionalMatcher::new(Rc::new(StrMatcher::new("hello")));
 
         let mut reader = StringCharReader::new("hello world");
 

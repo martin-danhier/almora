@@ -1,8 +1,11 @@
 use std::{error::Error, fs::File, io::Read};
 
-use crate::{utils::RingBuffer, parser_lib::{Stream, MatchStr, ParserError, ParseResult, Location}};
+use crate::{
+    parser_lib::{Location, MatchStr, ParseResult, ParserError, Stream},
+    utils::RingBuffer,
+};
 
-use super::{utils::TryIntoChar};
+use super::utils::TryIntoChar;
 
 /// Char reader that streams characters from a file.
 /// Doesn't load the whole file into memory.
@@ -97,7 +100,7 @@ impl FileCharReader {
         if index >= self.nb_read_from_file {
             self.load_chars(index - self.nb_read_from_file + 1);
 
-            if index >= self.nb_read_from_file  {
+            if index >= self.nb_read_from_file {
                 return false;
             }
         }
@@ -182,8 +185,7 @@ impl MatchStr for FileCharReader {
                     // If a difference is found, it's not equal
                     return Ok(false);
                 }
-            }
-            else {
+            } else {
                 // If EOF is reached before the end of the string to compare, it's not equal
                 return Ok(false);
             }
@@ -191,6 +193,36 @@ impl MatchStr for FileCharReader {
         }
 
         Ok(true)
+    }
+
+    fn match_range(&mut self, pos: usize, start: char, end: char, max: u8) -> Result<u32, ParserError> {
+        // This is a stream: we can look ahead, but we can't look behind chars that were already consumed
+        if pos < self.nb_read_from_buffer {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.nb_read_from_buffer;
+
+        let mut matched = 0;
+
+        let mut i = relative_pos;
+        while let Some(c) = self.peek_nth(i) {
+            // If a difference is found, or if we already have matched the max, we stop here
+            if c < start || c > end {
+                break;
+            }
+
+            // If there is a max and it is reached, we stop here
+            if max != 0 && matched >= max.into() {
+                break;
+            }
+
+            matched += 1;
+            i += 1;
+        }
+
+        Ok(matched)
     }
 }
 
@@ -242,7 +274,7 @@ mod tests {
         assert_eq!(reader.consume(), Some('l'));
 
         assert_eq!(reader.peek(), Some('o'));
-        assert_eq!(reader.consume(), Some('o'));    
+        assert_eq!(reader.consume(), Some('o'));
 
         assert_eq!(reader.peek(), Some(' '));
         assert_eq!(reader.consume(), Some(' '));
@@ -289,8 +321,6 @@ mod tests {
         assert_eq!(reader.is_eof(), false);
         assert_eq!(reader.peek(), Some('e'));
         assert_eq!(reader.consume(), Some('e'));
-
-
     }
 
     #[test]
@@ -324,7 +354,10 @@ mod tests {
         // The number in the error is 39 (start index) + 9 (length of compared word) = 48
         // Which is the index of the last checked char
         assert!(reader.match_str(39, "important").is_err());
-        assert_eq!(reader.match_str(39, "important").unwrap_err(), ParserError::LookAheadBufferOverflow(48));
+        assert_eq!(
+            reader.match_str(39, "important").unwrap_err(),
+            ParserError::LookAheadBufferOverflow(48)
+        );
 
         // We can still compare words at the beginning, since the cursor hasn't moved
         assert!(reader.match_str(2, "hello").is_ok());
@@ -335,6 +368,45 @@ mod tests {
 
         // We shouldn't be able to access the "hello" word anymore
         assert!(reader.match_str(2, "hello").is_err());
-        assert_eq!(reader.match_str(2, "hello").unwrap_err(), ParserError::NoLookBehind(2));
+        assert_eq!(
+            reader.match_str(2, "hello").unwrap_err(),
+            ParserError::NoLookBehind(2)
+        );
+    }
+
+    #[test]
+    fn test_range() {
+        let mut reader = FileCharReader::new("resources/test_files/test.txt", 50).unwrap();
+
+        // Look ahead check should work
+        assert!(reader.match_range(9, 'a', 'z', 1).is_ok());
+        assert_eq!(reader.match_range(9, 'a', 'z', 1).unwrap(), 1);
+
+        // But not capital
+        assert!(reader.match_range(9, 'A', 'Z', 1).is_ok());
+        assert_eq!(reader.match_range(9, 'A', 'Z', 1).unwrap(), 0);
+
+        // But not numbers
+        assert!(reader.match_range(9, '0', '9', 1).is_ok());
+        assert_eq!(reader.match_range(9, '0', '9', 1).unwrap(), 0);
+
+        // Space is no alpha numeric
+        assert!(reader.match_range(7, 'a', 'z', 1).is_ok());
+        assert_eq!(reader.match_range(7, 'a', 'z', 1).unwrap(), 0);
+
+        assert!(reader.match_range(7, 'A', 'Z', 1).is_ok());
+        assert_eq!(reader.match_range(7, 'A', 'Z', 1).unwrap(), 0);
+
+        assert!(reader.match_range(7, '0', '9', 1).is_ok());
+        assert_eq!(reader.match_range(7, '0', '9', 1).unwrap(), 0);
+
+        // Should also work for longer matches
+        // Here it can get words up to 10 chars, but it stops at the space so it only finds 4 chars
+        assert!(reader.match_range(8, 'a', 'z', 10).is_ok());
+        assert_eq!(reader.match_range(8, 'a', 'z', 10).unwrap(), 4);
+
+        // 0 is infinite max
+        assert!(reader.match_range(39, 'a', 'z', 0).is_ok());
+        assert_eq!(reader.match_range(39, 'a', 'z', 0).unwrap(), 9);
     }
 }

@@ -1,15 +1,15 @@
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 use crate::parser_lib::{MatchToken, MatchStr, ParseResult, Location, CreateParseResult};
 
 /// Matcher that returns true if the given matcher matches the string, or not
 #[derive(Debug)]
 pub struct SequentialMatcher<R: MatchStr> {
-    children: Vec<Box<dyn MatchToken<R>>>
+    children: Vec<Rc<dyn MatchToken<R>>>
 }
 
 impl<R: MatchStr> SequentialMatcher<R> {
-    pub fn new(children: Vec<Box<dyn MatchToken<R>>>) -> Self {
+    pub fn new(children: Vec<Rc<dyn MatchToken<R>>>) -> Self {
         Self {
             children
         }
@@ -53,8 +53,8 @@ mod tests {
     #[test]
     fn test_sequential_matcher() {
         let rule = SequentialMatcher::new(vec![
-            Box::new(StrMatcher::new("hello ")),
-            Box::new(StrMatcher::new("world")),
+            Rc::new(StrMatcher::new("hello ")),
+            Rc::new(StrMatcher::new("world")),
         ]);
 
         let mut reader = StringCharReader::new("hello world");
@@ -76,8 +76,8 @@ mod tests {
 
         // Let's try to combine it with optional
         let rule2 = SequentialMatcher::new(vec![
-            Box::new(OptionalMatcher::new(Box::new(StrMatcher::new("hello ")))),
-            Box::new(StrMatcher::new("world")),
+            Rc::new(OptionalMatcher::new(Rc::new(StrMatcher::new("hello ")))),
+            Rc::new(StrMatcher::new("world")),
         ]);
 
         let mut reader = StringCharReader::new("hello world");
