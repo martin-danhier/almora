@@ -150,4 +150,22 @@ mod tests {
         assert_eq!(params.test(&loc, &mut reader).is_ok(), true);
         assert_eq!(params.test(&loc, &mut reader).unwrap(), Some(info5));
     }
+
+    #[test]
+    fn test_string_representation() {
+        let a = RepetitionMatcher::<StringCharReader>::new(Rc::new(StrMatcher::new("a")), 0);
+
+        // String representation should be "a*"
+        assert_eq!(a.to_string(), "\"a\"*");
+
+        let a = RepetitionMatcher::<StringCharReader>::new(Rc::new(StrMatcher::new("a")), 1);
+
+        // String representation should be "a+"
+        assert_eq!(a.to_string(), "\"a\"+");
+
+        let a = RepetitionMatcher::<StringCharReader>::new(Rc::new(StrMatcher::new("a")), 2);
+
+        // String representation should be "a{2}"
+        assert_eq!(a.to_string(), "\"a\"{2,...}");
+    }
 }

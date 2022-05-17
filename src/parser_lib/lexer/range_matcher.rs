@@ -102,6 +102,9 @@ mod tests {
         // But the next one must fail
         assert_eq!(rule.test(&loc, &mut reader).is_ok(), true);
         assert_eq!(rule.test(&loc, &mut reader).unwrap(), None);
+
+        // String representation should be "[a-z]"
+        assert_eq!(rule.to_string(), "[a-z]");
     }
 
     #[test]

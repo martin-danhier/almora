@@ -40,7 +40,8 @@ impl<R: MatchStr> MatchToken<R> for SequentialMatcher<R> {
 
 impl<R: MatchStr> Display for SequentialMatcher<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}?", self.children)
+        // Simply write children one after another
+        write!(f, "({})", self.children.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(" "))
     }
 }
 

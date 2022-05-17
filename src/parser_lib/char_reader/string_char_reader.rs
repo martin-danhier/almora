@@ -1,4 +1,4 @@
-use crate::parser_lib::{Stream, MatchStr, ParseResult, ParserError};
+use crate::parser_lib::{Stream, MatchStr, ParserError};
 
 /// Char reader that streams characters from a string.
 ///
@@ -16,6 +16,7 @@ pub struct StringCharReader {
 
 impl StringCharReader {
     /// Creates a new StringCharReader from a string.
+    #[allow(unused)]
     pub fn new(s: &str) -> Self {
         Self {
             string: String::from(s),

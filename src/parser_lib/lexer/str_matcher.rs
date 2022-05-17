@@ -58,7 +58,7 @@ impl<R: MatchStr> MatchToken<R> for StrMatcher {
 
 impl Display for StrMatcher {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "\"{}\"", self.value)
     }
 }
 
@@ -94,6 +94,10 @@ mod tests {
         let rule = StrMatcher::new("");
         assert_eq!(rule.delta_lines, 0);
         assert_eq!(rule.delta_columns, 0);
+
+        // String representation should be "\"hello\""
+        let rule = StrMatcher::new("hello");
+        assert_eq!(format!("{}", rule), "\"hello\"");
     }
 
     #[test]

@@ -66,5 +66,8 @@ mod tests {
         assert_eq!(rule.test(&loc3, &mut reader).is_ok(), true);
         assert_eq!(rule.test(&loc3, &mut reader).unwrap(), Some(info3));
 
+        // String representation should be "hello?"
+        assert_eq!(format!("{}", rule), "\"hello\"?".to_string());
+
     }
 }
