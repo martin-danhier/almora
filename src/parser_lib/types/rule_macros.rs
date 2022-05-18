@@ -3,20 +3,23 @@
 use crate::parser_lib::Rule;
 
 /// Matches a sequence of rules
+#[macro_export(rule_macros)]
 macro_rules! seq {
     ($($rule:expr),*) => {
-        Rule::seq(vec![$($rule),*])
+        Rule::seq(vec![$(&$rule),*])
     };
 }
 
 /// Chooses between several rules
+#[macro_export]
 macro_rules! choice {
     ($($rule:expr),*) => {
-        Rule::choice(vec![$($rule),*])
+        Rule::choice(vec![$(&$rule),*])
     };
 }
 
 /// Makes the rule optional
+#[macro_export]
 macro_rules! opt {
     ($rule:expr) => {
         $rule.optional()
@@ -24,6 +27,7 @@ macro_rules! opt {
 }
 
 /// Matches a char within a range
+#[macro_export]
 macro_rules! range {
     ($start:expr, $end:expr) => {
         Rule::range($start, $end)
@@ -31,6 +35,7 @@ macro_rules! range {
 }
 
 /// Matches an exact word
+#[macro_export]
 macro_rules! word {
     ($word:expr) => {
         Rule::word($word)
@@ -47,7 +52,7 @@ mod tests {
     fn test_seq() {
         let x: Rule<StringCharReader> = word!("X");
         let y = word!("Y");
-        let val = seq![&x, &y];
+        let val = seq![x, y];
         assert_eq!(val.to_string(), "(\"X\" \"Y\")");
     }
 
@@ -55,14 +60,14 @@ mod tests {
     fn test_choice() {
         let x: Rule<StringCharReader> = word!("X");
         let y = word!("Y");
-        let val = choice![&x, &y];
+        let val = choice![x, y];
         assert_eq!(val.to_string(), "(\"X\" | \"Y\")");
     }
 
     #[test]
     fn test_opt() {
         let x: Rule<StringCharReader> = word!("X");
-        let val = opt!(&x);
+        let val = opt!(x);
         assert_eq!(val.to_string(), "\"X\"?");
     }
 

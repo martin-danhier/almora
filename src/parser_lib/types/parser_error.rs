@@ -9,6 +9,8 @@ pub enum ParserError {
     NoLookBehind(usize),
     /// Tried to peek a char which is too far away from the cursor and wouldn't fit in the buffer
     LookAheadBufferOverflow(usize),
+    /// Tried to use a grammar that is not defined
+    NoGrammarDefined,
 }
 
 impl Display for ParserError {
@@ -18,6 +20,8 @@ impl Display for ParserError {
                 => write!(f, "Invalid search index: {}. Unable to look behind cursor.", index),
             ParserError::LookAheadBufferOverflow(index)
                 => write!(f, "Could not look ahead char at relative index {}: char read buffer capacity is too small.", index),
+            ParserError::NoGrammarDefined
+                => write!(f, "No grammar defined. Use `define_grammar!` macro."),
         }
     }
 }

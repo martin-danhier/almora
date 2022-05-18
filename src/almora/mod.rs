@@ -1,2 +1,5 @@
 pub mod parser;
-pub mod grammar;
+mod grammar;
+mod main;
+
+pub use grammar::almora;
