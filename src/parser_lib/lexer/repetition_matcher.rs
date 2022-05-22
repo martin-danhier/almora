@@ -1,6 +1,6 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::parser_lib::{MatchToken, MatchStr, ParseResult, CreateParseResult, Location};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult};
 
 /// Matcher that returns true if the given matcher matches the string min times, or more
 #[derive(Debug)]
@@ -11,10 +11,7 @@ pub struct RepetitionMatcher<R: MatchStr> {
 
 impl<R: MatchStr> RepetitionMatcher<R> {
     pub fn new(value: Rc<dyn MatchToken<R>>, min: u8) -> Self {
-        Self {
-            value,
-            min,
-        }
+        Self { value, min }
     }
 }
 
@@ -35,8 +32,7 @@ impl<R: MatchStr> MatchToken<R> for RepetitionMatcher<R> {
         // If we got at least min matches, we have a match
         if count >= self.min {
             ParseResult::matches(*loc, end_loc)
-        }
-        else {
+        } else {
             ParseResult::no_match()
         }
     }
@@ -54,7 +50,7 @@ impl<R: MatchStr> Display for RepetitionMatcher<R> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_lib::{StringCharReader, StrMatcher, ParseInfo, Span, SequentialMatcher};
+    use crate::parser_lib::{ParseInfo, SequentialMatcher, Span, StrMatcher, StringCharReader};
 
     use super::*;
 

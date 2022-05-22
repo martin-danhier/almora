@@ -1,7 +1,7 @@
-mod types;
 mod char_reader;
 mod lexer;
+mod types;
 
 pub use char_reader::*;
-pub use types::*;
 pub use lexer::*;
+pub use types::*;

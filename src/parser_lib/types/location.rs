@@ -24,14 +24,17 @@ impl Location {
     }
 
     /// Returns a position which is the beginning of a file
+    #[allow(unused)]
     pub fn beginning() -> Self {
         Self::new(1, 1, 0)
     }
 
+    #[allow(unused)]
     pub fn line(&self) -> usize {
         self.line
     }
 
+    #[allow(unused)]
     pub fn column(&self) -> usize {
         self.column
     }
@@ -40,6 +43,7 @@ impl Location {
         self.index
     }
 
+    #[allow(unused)]
     pub fn add_line(&self) -> Self {
         Self {
             line: self.line + 1,
@@ -51,6 +55,7 @@ impl Location {
     /// Increments the location according to the given char.
     ///
     /// The increment is done **in place**.
+    #[allow(unused)]
     pub fn increment_for(&mut self, c: char) {
         match c {
             '\n' => {

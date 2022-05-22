@@ -1,18 +1,16 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::parser_lib::{MatchToken, MatchStr, ParseResult, Location, CreateParseResult};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult};
 
 /// Matcher that tries to match one of the given matchers
 #[derive(Debug)]
 pub struct ChoiceMatcher<R: MatchStr> {
-    children: Vec<Rc<dyn MatchToken<R>>>
+    children: Vec<Rc<dyn MatchToken<R>>>,
 }
 
 impl<R: MatchStr> ChoiceMatcher<R> {
     pub fn new(children: Vec<Rc<dyn MatchToken<R>>>) -> Self {
-        Self {
-            children
-        }
+        Self { children }
     }
 }
 
@@ -32,13 +30,21 @@ impl<R: MatchStr> MatchToken<R> for ChoiceMatcher<R> {
 impl<R: MatchStr> Display for ChoiceMatcher<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // Write children seperated by "|"
-        write!(f, "({})", self.children.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(" | "))
+        write!(
+            f,
+            "({})",
+            self.children
+                .iter()
+                .map(|c| format!("{}", c))
+                .collect::<Vec<_>>()
+                .join(" | ")
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_lib::{StringCharReader, StrMatcher, ParseInfo, Span};
+    use crate::parser_lib::{ParseInfo, Span, StrMatcher, StringCharReader};
 
     use super::*;
 
@@ -48,7 +54,6 @@ mod tests {
             Rc::new(StrMatcher::new("hey ")),
             Rc::new(StrMatcher::new("world")),
         ]);
-
 
         // First matches but not the second
         let mut reader = StringCharReader::new("hey you");

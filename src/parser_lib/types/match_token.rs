@@ -1,6 +1,6 @@
-use std::fmt::{Display, Debug};
+use std::fmt::{Debug, Display};
 
-use super::{MatchStr, ParseResult, Location};
+use super::{Location, MatchStr, ParseResult};
 
 /// A matcher (or parser) tells how to analyse a specific part of the source code.
 ///

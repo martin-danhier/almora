@@ -23,5 +23,11 @@ pub trait MatchStr: Debug {
     /// max: if 0, repeat until in doesn't match. If > 0, repeat max times.
     ///
     /// If Ok, returns the number of chars matched.
-    fn match_range(&mut self, pos: usize, start: char, end: char, max: u8) -> Result<u32, ParserError>;
+    fn match_range(
+        &mut self,
+        pos: usize,
+        start: char,
+        end: char,
+        max: u8,
+    ) -> Result<u32, ParserError>;
 }

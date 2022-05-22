@@ -1,4 +1,4 @@
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display};
 
 use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult};
 
@@ -18,7 +18,7 @@ pub struct RangeMatcher {
     min: u8,
     /// Max number of matching chars
     /// If 0, considered as infinite
-    max: u8
+    max: u8,
 }
 
 impl RangeMatcher {
@@ -28,27 +28,29 @@ impl RangeMatcher {
             start,
             end,
             min: 1,
-            max: 1
+            max: 1,
         }
     }
 
     /// Create matcher for a range of chars, with a minimum number of matching chars and infinite max
+    #[allow(unused)]
     pub fn at_least_n(start: char, end: char, min: u8) -> Self {
         Self {
             start,
             end,
             min,
-            max: 0
+            max: 0,
         }
     }
 
     /// Create matcher for a range of chars, with a minimum and maximum number of matching chars
+    #[allow(unused)]
     pub fn repeat_between(start: char, end: char, min: u8, max: u8) -> Self {
         Self {
             start,
             end,
             min,
-            max
+            max,
         }
     }
 }

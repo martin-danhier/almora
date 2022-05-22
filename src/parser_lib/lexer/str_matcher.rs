@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::parser_lib::{Location, MatchStr, MatchToken, ParseResult, Span, CreateParseResult};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, Span};
 
 /// Matcher that tries to match an exact string (like a keyword).
 #[derive(Debug)]
@@ -64,7 +64,7 @@ impl Display for StrMatcher {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_lib::{StringCharReader, ParseInfo};
+    use crate::parser_lib::{ParseInfo, StringCharReader};
 
     use super::*;
 

@@ -1,10 +1,10 @@
-use crate::{define_grammar, range, word, choice};
+use crate::{choice, define_grammar, range, word};
 
 define_grammar!(almora, |grammar: &mut GrammarBuilder<R>| {
     // Basic tokens
-    let plus  = word!("+");
-    let minus  = word!("-");
-    let times  = word!("*");
+    let plus = word!("+");
+    let minus = word!("-");
+    let times = word!("*");
     let divide = word!("/");
     let modulo = word!("%");
 

@@ -1,7 +1,7 @@
 use std::{fmt::Display, rc::Rc};
 
 use crate::parser_lib::{
-    OptionalMatcher, RangeMatcher, RepetitionMatcher, SequentialMatcher, StrMatcher, ChoiceMatcher,
+    ChoiceMatcher, OptionalMatcher, RangeMatcher, RepetitionMatcher, SequentialMatcher, StrMatcher,
 };
 
 use super::{Location, MatchStr, MatchToken, ParseResult};
@@ -42,6 +42,7 @@ impl<R: 'static + MatchStr> Rule<R> {
     }
 
     /// Matches a sequence of rules.
+    #[allow(unused)]
     pub fn seq(rules: Vec<&Self>) -> Self {
         // Get all underlying matchers
         let matchers = rules.into_iter().map(|r| r.matcher.clone()).collect();
@@ -68,6 +69,7 @@ impl<R: 'static + MatchStr> Rule<R> {
     }
 
     /// Makes the rule optional.
+    #[allow(unused)]
     pub fn optional(&self) -> Self {
         let optional = OptionalMatcher::new(self.matcher.clone());
         Self {

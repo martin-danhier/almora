@@ -1,18 +1,16 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::parser_lib::{MatchToken, MatchStr, ParseResult, Location, CreateParseResult};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult};
 
 /// Matcher that returns true if the given matcher matches the string, or not
 #[derive(Debug)]
 pub struct SequentialMatcher<R: MatchStr> {
-    children: Vec<Rc<dyn MatchToken<R>>>
+    children: Vec<Rc<dyn MatchToken<R>>>,
 }
 
 impl<R: MatchStr> SequentialMatcher<R> {
     pub fn new(children: Vec<Rc<dyn MatchToken<R>>>) -> Self {
-        Self {
-            children
-        }
+        Self { children }
     }
 }
 
@@ -25,8 +23,7 @@ impl<R: MatchStr> MatchToken<R> for SequentialMatcher<R> {
             if let Some(res) = child.test(&end_loc, reader)? {
                 // If the child matched, update the end location
                 end_loc = *res.span().end();
-            }
-            else {
+            } else {
                 // None: one of the children didn't match, thus the whole sequence doesn't match
                 // We can stop here
                 return ParseResult::no_match();
@@ -41,13 +38,21 @@ impl<R: MatchStr> MatchToken<R> for SequentialMatcher<R> {
 impl<R: MatchStr> Display for SequentialMatcher<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // Simply write children one after another
-        write!(f, "({})", self.children.iter().map(|c| format!("{}", c)).collect::<Vec<_>>().join(" "))
+        write!(
+            f,
+            "({})",
+            self.children
+                .iter()
+                .map(|c| format!("{}", c))
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_lib::{StringCharReader, StrMatcher, ParseInfo, Span, OptionalMatcher};
+    use crate::parser_lib::{OptionalMatcher, ParseInfo, Span, StrMatcher, StringCharReader};
 
     use super::*;
 
@@ -61,7 +66,10 @@ mod tests {
         let mut reader = StringCharReader::new("hello world");
 
         // Test rule
-        let info = ParseInfo::new(Span::new(Location::beginning(), Location::new(1, 12, 11)), 11);
+        let info = ParseInfo::new(
+            Span::new(Location::beginning(), Location::new(1, 12, 11)),
+            11,
+        );
         let loc = Location::beginning();
         assert_eq!(rule.test(&loc, &mut reader).is_ok(), true);
         assert_eq!(rule.test(&loc, &mut reader).unwrap(), Some(info));
@@ -84,7 +92,10 @@ mod tests {
         let mut reader = StringCharReader::new("hello world");
 
         // Should be able to match the whole string
-        let info = ParseInfo::new(Span::new(Location::beginning(), Location::new(1, 12, 11)), 11);
+        let info = ParseInfo::new(
+            Span::new(Location::beginning(), Location::new(1, 12, 11)),
+            11,
+        );
         assert_eq!(rule2.test(&loc, &mut reader).is_ok(), true);
         assert_eq!(rule2.test(&loc, &mut reader).unwrap(), Some(info));
 
@@ -103,6 +114,5 @@ mod tests {
         let mut reader = StringCharReader::new("hello how are you?");
         assert_eq!(rule.test(&loc, &mut reader).is_ok(), true);
         assert_eq!(rule.test(&loc, &mut reader).unwrap(), None);
-
     }
 }

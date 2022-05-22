@@ -1,8 +1,10 @@
-use std::{error::Error, fmt::{Display, Debug}};
+use std::{
+    error::Error,
+    fmt::{Debug, Display},
+};
 
 #[derive(Debug)]
 pub enum RingBufferError<T: Copy + Clone + Debug + Display> {
-    NotInBuffer(usize),
     NotEnoughSpace(T),
 }
 
@@ -11,13 +13,8 @@ impl<T: Copy + Clone + Debug + Display> Display for RingBufferError<T> {
         // Only create messages when we want to print them
         match self {
             Self::NotEnoughSpace(c) => {
-                write!(
-                    f,
-                    "Not enough space in the buffer to push the char {}",
-                    c
-                )
-            },
-            Self::NotInBuffer(pos) => write!(f, "The char at position {} is not in the buffer", pos),
+                write!(f, "Not enough space in the buffer to push the char {}", c)
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
-use super::{ParseInfo, ParserError, Span, Location};
-
+use super::{Location, ParseInfo, ParserError, Span};
 
 // Other
 pub type ParseResult = Result<Option<ParseInfo>, ParserError>;
@@ -18,7 +17,10 @@ impl CreateParseResult for ParseResult {
     }
 
     fn matches(start: Location, end: Location) -> Self {
-        Ok(Some(ParseInfo::new(Span::new(start, end), end.index() - start.index())))
+        Ok(Some(ParseInfo::new(
+            Span::new(start, end),
+            end.index() - start.index(),
+        )))
     }
 
     fn no_match() -> Self {

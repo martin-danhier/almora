@@ -1,13 +1,13 @@
-mod str_matcher;
-mod optional_matcher;
-mod sequential_matcher;
-mod repetition_matcher;
-mod range_matcher;
 mod choice_matcher;
+mod optional_matcher;
+mod range_matcher;
+mod repetition_matcher;
+mod sequential_matcher;
+mod str_matcher;
 
-pub use str_matcher::StrMatcher;
-pub use optional_matcher::OptionalMatcher;
-pub use sequential_matcher::SequentialMatcher;
-pub use repetition_matcher::RepetitionMatcher;
-pub use range_matcher::RangeMatcher;
 pub use choice_matcher::ChoiceMatcher;
+pub use optional_matcher::OptionalMatcher;
+pub use range_matcher::RangeMatcher;
+pub use repetition_matcher::RepetitionMatcher;
+pub use sequential_matcher::SequentialMatcher;
+pub use str_matcher::StrMatcher;

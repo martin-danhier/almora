@@ -1,18 +1,16 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::parser_lib::{MatchToken, MatchStr, ParseResult, CreateParseResult, Location};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult};
 
 /// Matcher that returns true if the given matcher matches the string, or not
 #[derive(Debug)]
 pub struct OptionalMatcher<R: MatchStr> {
-    value: Rc<dyn MatchToken<R>>
+    value: Rc<dyn MatchToken<R>>,
 }
 
 impl<R: MatchStr> OptionalMatcher<R> {
     pub fn new(value: Rc<dyn MatchToken<R>>) -> Self {
-        Self {
-            value
-        }
+        Self { value }
     }
 }
 
@@ -39,7 +37,7 @@ impl<R: MatchStr> Display for OptionalMatcher<R> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser_lib::{StringCharReader, StrMatcher, ParseInfo, Span};
+    use crate::parser_lib::{ParseInfo, Span, StrMatcher, StringCharReader};
 
     use super::*;
 
@@ -68,6 +66,5 @@ mod tests {
 
         // String representation should be "hello?"
         assert_eq!(format!("{}", rule), "\"hello\"?".to_string());
-
     }
 }

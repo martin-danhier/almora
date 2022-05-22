@@ -1,4 +1,4 @@
-use crate::parser_lib::{Stream, MatchStr, ParserError};
+use crate::parser_lib::{MatchStr, ParserError, Stream};
 
 /// Char reader that streams characters from a string.
 ///
@@ -72,8 +72,7 @@ impl MatchStr for StringCharReader {
                     // If a difference is found, it's not equal
                     return Ok(false);
                 }
-            }
-            else {
+            } else {
                 // If EOF is reached before the end of the string to compare, it's not equal
                 return Ok(false);
             }
@@ -83,7 +82,13 @@ impl MatchStr for StringCharReader {
         Ok(true)
     }
 
-    fn match_range(&mut self, pos: usize, start: char, end: char, max: u8) -> Result<u32, ParserError> {
+    fn match_range(
+        &mut self,
+        pos: usize,
+        start: char,
+        end: char,
+        max: u8,
+    ) -> Result<u32, ParserError> {
         if pos < self.cursor_index {
             return Err(ParserError::NoLookBehind(pos));
         }
@@ -189,12 +194,12 @@ mod tests {
         // Try consuming again
         assert_eq!(reader.consume(), None);
         assert_eq!(reader.consume_nth(0), None);
-
     }
 
     #[test]
     fn test_match_str() {
-        let mut reader = StringCharReader::new("😎 hello this is a file which is really important and useful");
+        let mut reader =
+            StringCharReader::new("😎 hello this is a file which is really important and useful");
 
         // Look ahead check should work
         assert!(reader.match_str(8, "this").is_ok());
@@ -217,12 +222,16 @@ mod tests {
 
         // We shouldn't be able to access the "hello" word anymore
         assert!(reader.match_str(2, "hello").is_err());
-        assert_eq!(reader.match_str(2, "hello").unwrap_err(), ParserError::NoLookBehind(2));
+        assert_eq!(
+            reader.match_str(2, "hello").unwrap_err(),
+            ParserError::NoLookBehind(2)
+        );
     }
 
     #[test]
     fn test_range() {
-        let mut reader = StringCharReader::new("😎 hello this is a file which is really important and useful");
+        let mut reader =
+            StringCharReader::new("😎 hello this is a file which is really important and useful");
 
         // Look ahead check should work
         assert!(reader.match_range(9, 'a', 'z', 1).is_ok());

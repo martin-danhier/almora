@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{Span, Location};
+use super::{Location, Span};
 
 #[derive(Debug, PartialEq)]
 /// Information about a successful parse
@@ -11,20 +11,19 @@ pub struct ParseInfo {
 
 impl ParseInfo {
     pub fn new(span: Span, len: usize) -> Self {
-        Self {
-            span,
-            len,
-        }
+        Self { span, len }
     }
 
     pub fn span(&self) -> &Span {
         &self.span
     }
 
+    #[allow(unused)]
     pub fn len(&self) -> usize {
         self.len
     }
 
+    #[allow(unused)]
     pub fn start(&self) -> &Location {
         self.span.start()
     }

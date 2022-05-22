@@ -1,6 +1,6 @@
-use std::fmt::{Display, Formatter, Error};
+use std::fmt::{Display, Error, Formatter};
 
-use super::{MatchStr, Rule, MatchToken, ParseResult, CreateParseResult, Location, ParserError};
+use super::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, ParserError, Rule};
 use crate::word;
 
 #[derive(Debug)]
@@ -46,6 +46,7 @@ impl<R: 'static + MatchStr> GrammarBuilder<R> {
         GrammarBuilder { grammar }
     }
 
+    #[allow(unused)]
     pub fn reserved(&mut self, word: &'static str) -> Rule<R> {
         self.grammar.reserved_words.push(word.to_string());
         word!(word)
@@ -72,7 +73,7 @@ macro_rules! define_grammar {
             use crate::parser_lib::Rule;
 
             // Create the function
-            #[allow(dead_code)]
+            #[allow(unused)]
             pub fn define_grammar<R: 'static + MatchStr>() -> Grammar<R> {
                 let mut builder = GrammarBuilder::<R>::new();
 
@@ -81,4 +82,48 @@ macro_rules! define_grammar {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        choice,
+        parser_lib::{ParseInfo, Span, StringCharReader},
+        range,
+    };
+
+    define_grammar!(my_grammar, |_grammar: &mut GrammarBuilder<R>| {
+        // Basic tokens
+        let plus = word!("+");
+        let minus = word!("-");
+        let times = word!("*");
+        let divide = word!("/");
+        let modulo = word!("%");
+
+        let digit = range!('0', '9');
+        let integer = digit.at_least(1);
+
+        let operator = choice!(plus, minus, times, divide, modulo);
+
+        let term = choice!(integer, operator);
+
+        let expression = term.at_least(1);
+
+        // Save the root rule.
+        expression
+    });
+
+    #[test]
+    fn test_grammar() {
+        let grammar = my_grammar::define_grammar::<StringCharReader>();
+
+        let mut reader = StringCharReader::new("22+13");
+
+        // It should match everything
+        let info = ParseInfo::new(Span::new(Location::beginning(), Location::new(1, 6, 5)), 5);
+        let loc = Location::beginning();
+        assert_eq!(grammar.test(&loc, &mut reader).is_ok(), true);
+        assert_eq!(grammar.test(&loc, &mut reader).unwrap(), Some(info));
+    }
 }

@@ -1,7 +1,7 @@
 use std::{error::Error, fs::File, io::Read};
 
 use crate::{
-    parser_lib::{Location, MatchStr, ParseResult, ParserError, Stream},
+    parser_lib::{MatchStr, ParserError, Stream},
     utils::RingBuffer,
 };
 
@@ -25,6 +25,7 @@ pub struct FileCharReader {
 
 impl FileCharReader {
     /// Creates a new file char reader for the given file with the given buffer size
+    #[allow(unused)]
     pub fn new(filepath: &str, buffer_size: usize) -> Result<Self, Box<dyn Error>> {
         Ok(FileCharReader {
             file: File::open(filepath)?,
@@ -130,7 +131,7 @@ impl Stream<char> for FileCharReader {
 
         let res = self.buffer.pop();
 
-        if let Some(c) = res {
+        if let Some(_) = res {
             self.nb_read_from_buffer += 1;
         }
 
@@ -142,7 +143,7 @@ impl Stream<char> for FileCharReader {
         self.load_until(self.nb_read_from_buffer + n);
 
         // Discard the chars before the nth
-        for i in 0..n {
+        for _ in 0..n {
             self.buffer.pop();
         }
 
@@ -195,7 +196,13 @@ impl MatchStr for FileCharReader {
         Ok(true)
     }
 
-    fn match_range(&mut self, pos: usize, start: char, end: char, max: u8) -> Result<u32, ParserError> {
+    fn match_range(
+        &mut self,
+        pos: usize,
+        start: char,
+        end: char,
+        max: u8,
+    ) -> Result<u32, ParserError> {
         // This is a stream: we can look ahead, but we can't look behind chars that were already consumed
         if pos < self.nb_read_from_buffer {
             return Err(ParserError::NoLookBehind(pos));
