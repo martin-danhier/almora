@@ -1,8 +1,8 @@
-use crate::parser_lib::MatchStr;
+use crate::parser_lib::{MatchStr, Stream};
 
 use super::grammar::*;
 
-pub fn compile<R: 'static + MatchStr>() {
+pub fn compile<R: 'static + MatchStr + Stream<char>>() {
     let grammar = almora::define_grammar::<R>();
     println!("{}", grammar);
 }

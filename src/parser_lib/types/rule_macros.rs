@@ -1,7 +1,7 @@
 // Define helper macros to reduce the amount of boilerplate needed to define rules
 
 #[allow(unused)]
-use crate::parser_lib::Rule;
+use crate::parser_lib::{Rule};
 
 /// Matches a sequence of rules
 #[macro_export(rule_macros)]

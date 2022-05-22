@@ -1,6 +1,6 @@
 use std::fmt::{Display, Error, Formatter};
 
-use super::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, ParserError, Rule};
+use super::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, ParserError, Rule, Stream};
 use crate::word;
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub struct GrammarBuilder<R: MatchStr> {
     grammar: Grammar<R>,
 }
 
-impl<R: 'static + MatchStr> GrammarBuilder<R> {
+impl<R: 'static + MatchStr + Stream<char>> GrammarBuilder<R> {
     pub fn new() -> Self {
         let grammar = Grammar::<R> {
             root: None,
@@ -77,10 +77,11 @@ macro_rules! define_grammar {
             use crate::parser_lib::GrammarBuilder;
             use crate::parser_lib::MatchStr;
             use crate::parser_lib::Rule;
+            use crate::parser_lib::Stream;
 
             // Create the function
             #[allow(unused)]
-            pub fn define_grammar<R: 'static + MatchStr>() -> Grammar<R> {
+            pub fn define_grammar<R: 'static + MatchStr + Stream<char>>() -> Grammar<R> {
                 let mut builder = GrammarBuilder::<R>::new();
 
                 let root: Rule<R> = $body(&mut builder);

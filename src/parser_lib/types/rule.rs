@@ -4,7 +4,7 @@ use crate::parser_lib::{
     ChoiceMatcher, OptionalMatcher, RangeMatcher, RepetitionMatcher, SequentialMatcher, StrMatcher, NotMatcher, UntilMatcher, TokenMatcher,
 };
 
-use super::{Location, MatchStr, MatchToken, ParseResult};
+use super::{Location, MatchStr, MatchToken, ParseResult, Stream};
 
 /// A "Rule" wraps a Matcher and gives it helper functions for clearer grammar definition.
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl<R: MatchStr> MatchToken<R> for Rule<R> {
     }
 }
 
-impl<R: 'static + MatchStr> Rule<R> {
+impl<R: 'static + MatchStr + Stream<char>> Rule<R> {
     /// Creates a new Rule from a Matcher.
     pub fn new(matcher: Rc<dyn MatchToken<R>>) -> Self {
         Self { matcher }
