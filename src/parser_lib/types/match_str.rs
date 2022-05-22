@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use super::ParserError;
+use super::{ParserError, Stream};
 
 pub trait MatchStr: Debug {
     /// Compares the given string `s` with the input at the position `pos`.
@@ -30,4 +30,10 @@ pub trait MatchStr: Debug {
         end: char,
         max: u8,
     ) -> Result<u32, ParserError>;
+
+    /// Returns true if the char is a newline.
+    fn is_newline(&mut self, pos: usize) -> Result<bool, ParserError>;
+
+    /// Returns true if the char is the end of the input.
+    fn is_end_of_input(&mut self, pos: usize) -> Result<bool, ParserError>;
 }

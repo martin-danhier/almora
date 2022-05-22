@@ -14,5 +14,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_compile() {}
+    fn test_compile() {
+    }
 }

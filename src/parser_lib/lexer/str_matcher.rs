@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, Span};
+use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, ParseResult, Span, Stream};
 
 /// Matcher that tries to match an exact string (like a keyword).
 #[derive(Debug)]
@@ -40,7 +40,7 @@ impl StrMatcher {
     }
 }
 
-impl<R: MatchStr> MatchToken<R> for StrMatcher {
+impl<R: MatchStr + Stream<char>> MatchToken<R> for StrMatcher {
     fn test(&self, loc: &Location, reader: &mut R) -> ParseResult {
         // Test to see if the string is in the input at the given location
         let success = reader.match_str(loc.index(), self.value)?;
@@ -58,7 +58,15 @@ impl<R: MatchStr> MatchToken<R> for StrMatcher {
 
 impl Display for StrMatcher {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "\"{}\"", self.value)
+        write!(f, "\"{}\"", match self.value {
+            "\n" => "\\n",
+            "\r" => "\\r",
+            "\t" => "\\t",
+            "\0" => "\\0",
+            "\"" => "\\\"",
+            "\\" => "\\\\",
+            v => v,
+        })
     }
 }
 

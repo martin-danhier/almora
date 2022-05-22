@@ -43,6 +43,22 @@ macro_rules! word {
     };
 }
 
+/// Negates the rule
+#[macro_export]
+macro_rules! not {
+    ($rule:expr) => {
+        $rule.not()
+    };
+}
+
+/// Matches anything that doesn't match a rule, at least `min` times
+#[macro_export]
+macro_rules! until {
+    ($rule:expr, $min:expr) => {
+        Rule::until(&$rule, $min)
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parser_lib::StringCharReader;
@@ -88,5 +104,19 @@ mod tests {
     fn test_repetition() {
         let x: Rule<StringCharReader> = word!("X").at_least(2);
         assert_eq!(x.to_string(), "\"X\"{2,...}");
+    }
+
+    #[test]
+    fn test_not() {
+        let x: Rule<StringCharReader> = word!("X");
+        let val = not!(x);
+        assert_eq!(val.to_string(), "(!\"X\")");
+    }
+
+    #[test]
+    fn test_until() {
+        let x: Rule<StringCharReader> = word!("X");
+        let val = until!(x, 2);
+        assert_eq!(val.to_string(), "(!\"X\"){2,...}");
     }
 }

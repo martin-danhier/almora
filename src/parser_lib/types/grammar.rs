@@ -11,6 +11,7 @@ pub struct Grammar<R: MatchStr> {
     root: Option<Rule<R>>,
     /// Keywords that are not allowed for identifiers.
     reserved_words: Vec<String>,
+    ignored: Option<Rule<R>>,
 }
 
 impl<R: MatchStr> Display for Grammar<R> {
@@ -42,6 +43,7 @@ impl<R: 'static + MatchStr> GrammarBuilder<R> {
         let grammar = Grammar::<R> {
             root: None,
             reserved_words: Vec::new(),
+            ignored: None,
         };
         GrammarBuilder { grammar }
     }
@@ -55,6 +57,10 @@ impl<R: 'static + MatchStr> GrammarBuilder<R> {
     pub fn save_root(mut self, root: Rule<R>) -> Grammar<R> {
         self.grammar.root = Some(root);
         self.grammar
+    }
+
+    pub fn ignore(&mut self, ignored: Rule<R>) {
+        self.grammar.ignored = Some(ignored);
     }
 }
 

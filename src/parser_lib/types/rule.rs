@@ -1,7 +1,7 @@
 use std::{fmt::Display, rc::Rc};
 
 use crate::parser_lib::{
-    ChoiceMatcher, OptionalMatcher, RangeMatcher, RepetitionMatcher, SequentialMatcher, StrMatcher,
+    ChoiceMatcher, OptionalMatcher, RangeMatcher, RepetitionMatcher, SequentialMatcher, StrMatcher, NotMatcher, UntilMatcher, TokenMatcher,
 };
 
 use super::{Location, MatchStr, MatchToken, ParseResult};
@@ -37,8 +37,15 @@ impl<R: 'static + MatchStr> Rule<R> {
     }
 
     /// Matches characters within a range.
+    #[allow(unused)]
     pub fn range(start: char, end: char) -> Self {
         Self::new(Rc::new(RangeMatcher::new(start, end)))
+    }
+
+    /// Matches any character that doesn't match the condition, at least `min` times.
+    #[allow(unused)]
+    pub fn until(until: &Self, min: usize) -> Self {
+        Self::new(Rc::new(UntilMatcher::new(Rc::clone(&until.matcher), min)))
     }
 
     /// Matches a sequence of rules.
@@ -61,6 +68,7 @@ impl<R: 'static + MatchStr> Rule<R> {
     }
 
     /// Repeats the rule at least n time.
+    #[allow(unused)]
     pub fn at_least(&self, n: u8) -> Self {
         let repeat = RepetitionMatcher::new(self.matcher.clone(), n);
         Self {
@@ -74,6 +82,24 @@ impl<R: 'static + MatchStr> Rule<R> {
         let optional = OptionalMatcher::new(self.matcher.clone());
         Self {
             matcher: Rc::new(optional),
+        }
+    }
+
+    /// Negates the rule.
+    #[allow(unused)]
+    pub fn not(&self) -> Self {
+        let not = NotMatcher::new(self.matcher.clone());
+        Self {
+            matcher: Rc::new(not),
+        }
+    }
+
+    /// Finishes a token (consumes the input it takes, it won't be accessible again).
+    #[allow(unused)]
+    pub fn finish_token(self) -> Self {
+        let finish = TokenMatcher::new(self.matcher.clone());
+        Self {
+            matcher: Rc::new(finish),
         }
     }
 }

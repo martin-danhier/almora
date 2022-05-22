@@ -231,6 +231,48 @@ impl MatchStr for FileCharReader {
 
         Ok(matched)
     }
+
+    fn is_newline(&mut self, pos: usize) -> Result<bool, ParserError> {
+        // This is a stream: we can look ahead, but we can't look behind chars that were already consumed
+        if pos < self.nb_read_from_buffer {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.nb_read_from_buffer;
+
+        // If the string is to far away or to big to fit in the buffer, we won't be able to look it ahead
+        if relative_pos + 1 >= self.buffer.capacity() {
+            return Err(ParserError::LookAheadBufferOverflow(relative_pos + 1));
+        }
+
+        // Compare the char
+        match self.peek_nth(relative_pos) {
+            Some('\n') => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    fn is_end_of_input(&mut self, pos: usize) -> Result<bool, ParserError> {
+        // This is a stream: we can look ahead, but we can't look behind chars that were already consumed
+        if pos < self.nb_read_from_buffer {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.nb_read_from_buffer;
+
+        // If the string is to far away or to big to fit in the buffer, we won't be able to look it ahead
+        if relative_pos + 1 >= self.buffer.capacity() {
+            return Err(ParserError::LookAheadBufferOverflow(relative_pos + 1));
+        }
+
+        // Compare the char
+        match self.peek_nth(relative_pos) {
+            None => Ok(true),
+            _ => Ok(false),
+        }
+    }
 }
 
 #[cfg(test)]

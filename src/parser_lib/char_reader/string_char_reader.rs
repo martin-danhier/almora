@@ -117,6 +117,33 @@ impl MatchStr for StringCharReader {
 
         Ok(matched)
     }
+
+    fn is_newline(&mut self, pos: usize) -> Result<bool, ParserError> {
+        if pos < self.cursor_index {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        // This is the amount by which we will need to look ahead for the start of the stream
+        let relative_pos = pos - self.cursor_index;
+
+        // Compare the char
+        match self.peek_nth(relative_pos) {
+            Some('\n') => Ok(true),
+            _ => Ok(false),
+        }
+    }
+
+    fn is_end_of_input(&mut self, pos: usize) -> Result<bool, ParserError> {
+        if pos < self.cursor_index {
+            return Err(ParserError::NoLookBehind(pos));
+        }
+
+        if pos >= self.string.len() {
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
 }
 
 #[cfg(test)]
@@ -126,6 +153,14 @@ mod tests {
     #[test]
     fn test_string_char_reader() {
         let mut reader = StringCharReader::new("hello");
+
+        // Check eof with other function
+        assert_eq!(reader.is_end_of_input(0), Ok(false));
+        assert_eq!(reader.is_end_of_input(1), Ok(false));
+        assert_eq!(reader.is_end_of_input(2), Ok(false));
+        assert_eq!(reader.is_end_of_input(3), Ok(false));
+        assert_eq!(reader.is_end_of_input(4), Ok(false));
+        assert_eq!(reader.is_end_of_input(5), Ok(true));
 
         // Not EOF
         assert_eq!(reader.is_eof(), false);
@@ -166,6 +201,8 @@ mod tests {
 
         // Indeed, we should have EOF
         assert_eq!(reader.is_eof(), true);
+
+
     }
 
     #[test]
