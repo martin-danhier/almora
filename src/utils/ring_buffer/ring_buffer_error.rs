@@ -5,16 +5,16 @@ use std::{
 
 #[derive(Debug)]
 pub enum RingBufferError {
-    NotEnoughSpace(char),
+    NotEnoughSpace,
+    OutOfBounds,
 }
 
 impl Display for RingBufferError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only create messages when we want to print them
         match self {
-            Self::NotEnoughSpace(c) => {
-                write!(f, "Not enough space in the buffer to push the char {}", c)
-            }
+            Self::NotEnoughSpace => write!(f, "Not enough space in the buffer to push data."),
+            Self::OutOfBounds => write!(f, "Tried to read or write outside of the buffer."),
         }
     }
 }

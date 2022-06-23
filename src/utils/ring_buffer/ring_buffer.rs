@@ -1,26 +1,25 @@
-use crate::utils::Peek;
+use crate::utils::{try_into_char::TryIntoChar, Peek};
 
 use super::RingBufferError;
 use std::fmt::{Debug, Display, Write};
 
 /// Ring buffer for storing values.
 #[derive(Debug)]
-pub struct CharRingBuffer {
-    // Use a String for the buffer
-    // That will allow to take slices for quick comparisons
-    buf: String,
+pub struct RingBuffer {
+    // Use a buffer of bytes
+    buf: Vec<u8>,
     /// Where to read from next
     read_pos: usize,
     /// Where to write the next character.
     write_pos: usize,
-    /// Number of chars in the buffer.
+    /// Number of bytes in the buffer.
     len: usize,
 }
 
-impl CharRingBuffer {
+impl RingBuffer {
     pub fn new(capacity: usize) -> Self {
-        CharRingBuffer {
-            buf: String::with_capacity(capacity),
+        RingBuffer {
+            buf: vec![0u8; capacity],
             read_pos: 0,
             write_pos: 0,
             len: 0,
@@ -46,67 +45,132 @@ impl CharRingBuffer {
 
     // Methods
 
-    /// Append a value at the end of the buffer
-    pub fn push_back(&mut self, c: char) -> Result<(), RingBufferError> {
-        if self.len() == self.capacity() {
-            return Err(RingBufferError::NotEnoughSpace(c));
+    pub fn extend_bytes(&mut self, bytes: &[u8]) -> Result<(), RingBufferError> {
+        if self.len() + bytes.len() > self.capacity() {
+            return Err(RingBufferError::NotEnoughSpace);
         }
 
-        self.buf[self.write_pos] = c;
+        let slice = &bytes[..];
 
+        // Compute how much can be fit without wrapping
+        let count_to_end = self.capacity() - self.write_pos;
 
-        self.buf.write_char(c)
-        // Increase write_pos and size and wrap around if necessary
-        self.write_pos += 1;
-        if self.write_pos == self.capacity() {
-            self.write_pos = 0;
+        // If we can fit all the bytes, do it
+        if count_to_end >= bytes.len() {
+            self.buf[self.write_pos..self.write_pos + bytes.len()].copy_from_slice(slice);
+            self.write_pos += bytes.len();
         }
+        // Otherwise, copy the first part and the second part
+        else {
+            let capacity = self.capacity();
+            self.buf[self.write_pos..capacity].copy_from_slice(&slice[..count_to_end]);
+            self.buf[..bytes.len() - count_to_end].copy_from_slice(&slice[count_to_end..]);
+            self.write_pos = bytes.len() - count_to_end;
+        }
+
         // Increase size
-        self.len += 1;
+        self.len += bytes.len();
 
         Ok(())
     }
 
-    /// Remove the value at the start of the buffer and return it.
-    pub fn pop_front(&mut self) -> Option<char> {
-        if self.empty() {
-            return None;
+
+    /// Compares if the given slice is equal to the beginning of the buffer.
+    pub fn starts_with(&self, other: &[u8]) -> bool {
+        // Compute how much can be fit without wrapping
+        let mut count_to_end = self.capacity() - self.read_pos;
+
+        // If we can fit all the bytes, do it
+        if count_to_end >= other.len() {
+            return &self.buf[self.read_pos..self.read_pos + other.len()] == other;
         }
-
-        let c = self.buf.chars().nth(self.read_pos);
-
-        // Increase read_pos and size and wrap around if necessary
-        self.read_pos += 1;
-        if self.read_pos == self.capacity() {
-            self.read_pos = 0;
+        // Otherwise, copy the first part and the second part
+        else {
+            return &self.buf[self.read_pos..self.capacity()] == &other[..count_to_end]
+                && &self.buf[..other.len() - count_to_end] == &other[count_to_end..];
         }
-        // Decrease size
-        self.len -= 1;
-
-        c
     }
 
-    fn peek(&mut self) -> Option<char> {
-        if self.empty() {
-            return None;
-        }
-
-        self.buf.chars().nth(self.read_pos)
+    pub fn advance_by(&mut self, count: usize) {
+        self.read_pos = (self.read_pos + count) % self.capacity();
+        self.len -= count;
     }
 
-    fn peek_nth(&mut self, n: usize) -> Option<char> {
-        if self.empty(){
-            return None;
+    pub fn iter(&self) -> RingBufferIterator {
+        RingBufferIterator {
+            buffer: &self,
+            index: self.read_pos,
+        }
+    }
+
+}
+
+pub struct RingBufferIterator<'a> {
+    buffer: &'a RingBuffer,
+    index: usize,
+}
+
+impl<'a> RingBufferIterator<'a> {
+    pub fn advance(&mut self, count: usize) -> Result<(), RingBufferError> {
+        // Simple case
+        if count == 0 {
+            return Ok(());
         }
 
-        if n >= self.len() {
-            return None;
-        }
+        let index = (self.index + count) % self.buffer.capacity();
 
-        let pos = (self.read_pos + n) % self.capacity();
-        self.buf.chars().nth(pos)
+        // Case 1: _[R--I--[W__
+        if self.buffer.read_pos <= index && index < self.buffer.write_pos {
+            self.index = index;
+            Ok(())
+        }
+        // Case 2: I-[W____[R-I
+        else if !(self.buffer.write_pos <= index && index < self.buffer.read_pos) {
+            self.index = index;
+            Ok(())
+        }
+        else {
+            Err(RingBufferError::OutOfBounds)
+        }
     }
 }
+
+impl <'a> Iterator for RingBufferIterator<'a> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Read the next UTF8 char
+        let mut char_buf = [0u8; 4];
+        let mut char_i = 0;
+
+        // Read the bytes
+        while char_i < 4 {
+            // Reached the end
+            if self.index == self.buffer.write_pos {
+                return None;
+            }
+
+            char_buf[char_i] = self.buffer.buf[self.index];
+
+            // Increment and wrap around if needed
+            char_i += 1;
+            self.index += 1;
+            if self.index == self.buffer.capacity() {
+                self.index = 0;
+            }
+
+            // Check that it is a valid char
+            if let Ok(c) = char_buf.try_into_char() {
+                // We have a full char
+                return Some(c);
+            }
+        }
+
+        // Not an UTF8 char, maybe likely, idk
+        None
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -114,141 +178,55 @@ mod tests {
 
     #[test]
     fn test_init() {
-        let cb = CharRingBuffer::<char>::new(10);
+        let cb = RingBuffer::new(10);
 
         assert_eq!(cb.capacity(), 10);
         assert_eq!(cb.read_pos, 0);
         assert_eq!(cb.write_pos, 0);
 
         for c in cb.buf {
-            assert_eq!(c, None);
+            assert_eq!(c, 0u8);
         }
     }
 
     #[test]
-    fn test_push() {
-        let mut cb = CharRingBuffer::new(5);
+    fn test_extend() {
+        let mut cb = RingBuffer::new(15);
 
-        // Move head to middle so we can test wrapping
-        cb.write_pos = 2;
+        let bytes = b"Hello \xF0\x9F\xA4\xA8";
+        cb.extend_bytes(bytes).unwrap();
 
-        assert_eq!(cb.len(), 0);
-
-        assert_eq!(cb.push_back('h').is_ok(), true);
-        assert_eq!(cb.len(), 1);
-        assert_eq!(cb.write_pos, 3);
-        assert_eq!(cb.buf[2], Some('h'));
-
-        assert_eq!(cb.push_back('e').is_ok(), true);
-        assert_eq!(cb.len(), 2);
-        assert_eq!(cb.write_pos, 4);
-        assert_eq!(cb.buf[3], Some('e'));
-
-        assert_eq!(cb.push_back('l').is_ok(), true);
-        assert_eq!(cb.len(), 3);
-        assert_eq!(cb.write_pos, 0);
-        assert_eq!(cb.buf[4], Some('l'));
-
-        assert_eq!(cb.push_back('l').is_ok(), true);
-        assert_eq!(cb.len(), 4);
-        assert_eq!(cb.write_pos, 1);
-        assert_eq!(cb.buf[0], Some('l'));
-
-        assert_eq!(cb.push_back('o').is_ok(), true);
-        assert_eq!(cb.len(), 5);
-        assert_eq!(cb.write_pos, 2);
-        assert_eq!(cb.buf[1], Some('o'));
-
-        // Now we should be full
-        assert_eq!(cb.push_back('!').is_ok(), false);
-    }
-
-    #[test]
-    fn test_pop() {
-        let mut cb = CharRingBuffer::new(5);
-
-        // Move head to middle so we can test wrapping
-        cb.read_pos = 2;
-        cb.write_pos = 2;
-
-        // First, its empty
-        assert_eq!(cb.len(), 0);
-        assert_eq!(cb.pop_front().is_none(), true);
-
-        // Now we push some chars
-        assert_eq!(cb.push_back('h').is_ok(), true);
-        assert_eq!(cb.push_back('e').is_ok(), true);
-
-        // Now we should have 2 chars
-        assert_eq!(cb.len(), 2);
-
-        // Pop the first char
-        assert_eq!(cb.pop_front().unwrap(), 'h');
-        assert_eq!(cb.len(), 1);
-        assert_eq!(cb.read_pos, 3);
-
-        // Pop the second char
-        assert_eq!(cb.pop_front().unwrap(), 'e');
-        assert_eq!(cb.len(), 0);
-        assert_eq!(cb.read_pos, 4);
-
-        // Now we should be empty
-        assert_eq!(cb.pop_front().is_none(), true);
-
-        // Now we push some more chars
-        assert_eq!(cb.push_back('h').is_ok(), true);
-        assert_eq!(cb.push_back('e').is_ok(), true);
-        assert_eq!(cb.push_back('l').is_ok(), true);
-        assert_eq!(cb.push_back('l').is_ok(), true);
-        assert_eq!(cb.push_back('o').is_ok(), true);
-
-        // Now we should have 5 chars
-        assert_eq!(cb.len(), 5);
-
-        // Pop the first char
-        assert_eq!(cb.pop_front().unwrap(), 'h');
-        assert_eq!(cb.len(), 4);
+        assert_eq!(cb.len(), bytes.len());
         assert_eq!(cb.read_pos, 0);
+        assert_eq!(cb.write_pos, bytes.len());
+        assert!(cb.starts_with(b"Hello \xF0\x9F\xA4\xA8"));
 
-        // Pop the second char
-        assert_eq!(cb.pop_front().unwrap(), 'e');
-        assert_eq!(cb.len(), 3);
-        assert_eq!(cb.read_pos, 1);
+        cb.advance_by(6);
+
+        assert_eq!(cb.len(), bytes.len() - 6);
+        assert_eq!(cb.read_pos, 6);
+        assert_eq!(cb.write_pos, bytes.len());
+        assert!(cb.starts_with(b"\xF0\x9F\xA4\xA8"));
     }
 
     #[test]
-    fn test_peek() {
-        let mut cb = CharRingBuffer::new(5);
+    fn test_iterator() {
+        let mut cb = RingBuffer::new(15);
 
-        // Move head to middle so we can test wrapping
-        cb.read_pos = 2;
-        cb.write_pos = 2;
+        let bytes = b"Hello ";
+        cb.extend_bytes(bytes).unwrap();
 
-        // First, its empty
-        assert_eq!(cb.len(), 0);
-        assert_eq!(cb.peek().is_none(), true);
+        // Iterator allows to lookahead
+        let mut iter = cb.iter();
+        assert_eq!(iter.next(), Some('H'));
+        assert_eq!(iter.next(), Some('e'));
+        assert_eq!(iter.next(), Some('l'));
+        assert_eq!(iter.next(), Some('l'));
+        assert_eq!(iter.next(), Some('o'));
+        assert_eq!(iter.next(), Some(' '));
+        assert_eq!(iter.next(), None);
 
-        // Now we push some chars
-        assert_eq!(cb.push_back('h').is_ok(), true);
-        assert_eq!(cb.push_back('e').is_ok(), true);
-
-        // Now we should have 2 chars
-        assert_eq!(cb.len(), 2);
-
-        // Peek the first char
-        assert_eq!(cb.peek().unwrap(), 'h');
-        assert_eq!(cb.len(), 2);
-        assert_eq!(cb.read_pos, 2);
-
-        // Peek with nth
-        assert_eq!(cb.peek_nth(0).unwrap(), 'h');
-        assert_eq!(cb.len(), 2);
-        assert_eq!(cb.read_pos, 2);
-
-        assert_eq!(cb.peek_nth(1).unwrap(), 'e');
-        assert_eq!(cb.len(), 2);
-        assert_eq!(cb.read_pos, 2);
-
-        assert_eq!(cb.peek_nth(2).is_none(), true);
+        // But we can still match the token, because it didn't consume the bytes
+        assert!(cb.starts_with("Hello".as_bytes()));
     }
 }

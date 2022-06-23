@@ -4,7 +4,6 @@
 /// Characters can come from a file, a string, ...
 
 mod file_reader;
-mod try_into_char;
 mod string_reader;
 
 pub use file_reader::FileReader;

@@ -32,14 +32,14 @@ impl<R: Peek<Item = char>> Lexer<R> {
     /// Try to greedily match an identifier to the input. Returns it if it did, None otherwise.
     ///
     /// An identifier is equivalent to [a-zA-Z_][a-zA-Z0-9_]*
-    fn match_identifier(&mut self) -> Option<String> {
-        for ()
+    // fn match_identifier(&mut self) -> Option<String> {
+    //     for ()
 
 
 
 
-        None
-    }
+    //     None
+    // }
 
     fn parse_token() {}
 }
@@ -51,26 +51,26 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_string_lexer() {
-        // Create lexer based on string
-        let mut lexer = Lexer::new(StringReader::new("Hello"));
+    // #[test]
+    // fn test_string_lexer() {
+    //     // Create lexer based on string
+    //     let mut lexer = Lexer::new(StringReader::new("Hello"));
 
-        assert!(lexer.match_str("Hell"));
-        assert!(lexer.match_str("Hello"));
-        assert!(lexer.match_str("H"));
-        assert!(lexer.match_str(""));
-        assert!(!lexer.match_str("Hello world"));
-        assert!(!lexer.match_str("Hi"));
-        assert!(!lexer.match_str("Bonjour"));
-        assert!(!lexer.match_str("Haha"));
-    }
+    //     assert!(lexer.match_str("Hell"));
+    //     assert!(lexer.match_str("Hello"));
+    //     assert!(lexer.match_str("H"));
+    //     assert!(lexer.match_str(""));
+    //     assert!(!lexer.match_str("Hello world"));
+    //     assert!(!lexer.match_str("Hi"));
+    //     assert!(!lexer.match_str("Bonjour"));
+    //     assert!(!lexer.match_str("Haha"));
+    // }
 
-    #[test]
-    fn test_file_lexer() {
-        // Create lexer based on file
-        let file = File::open("resources/test_files/test.txt").unwrap();
-        let reader = FileReader::new(file);
-        let lexer = Lexer::new(reader);
-    }
+    // #[test]
+    // fn test_file_lexer() {
+    //     // Create lexer based on file
+    //     let file = File::open("resources/test_files/test.txt").unwrap();
+    //     let reader = FileReader::new(file);
+    //     let lexer = Lexer::new(reader);
+    // }
 }
