@@ -4,11 +4,11 @@ use std::{
 };
 
 #[derive(Debug)]
-pub enum RingBufferError<T: Copy + Clone + Debug + Display> {
-    NotEnoughSpace(T),
+pub enum RingBufferError {
+    NotEnoughSpace(char),
 }
 
-impl<T: Copy + Clone + Debug + Display> Display for RingBufferError<T> {
+impl Display for RingBufferError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Only create messages when we want to print them
         match self {
@@ -19,4 +19,4 @@ impl<T: Copy + Clone + Debug + Display> Display for RingBufferError<T> {
     }
 }
 
-impl<T: Copy + Clone + Debug + Display> Error for RingBufferError<T> {}
+impl Error for RingBufferError {}

@@ -1,7 +1,7 @@
 use std::{fs::File, io::Read};
 
 use super::try_into_char::TryIntoChar;
-use crate::utils::{Peek, RingBuffer};
+use crate::{utils::{Peek, CharRingBuffer}, parser_lib::lexer::MatchToken};
 
 // =========== Constants ===========
 
@@ -13,8 +13,6 @@ const BUFFER_CAPACITY: usize = 1024;
 /// Amount that the reader can read at at time. This allows the reader to bulk read chars,
 /// and it will need to access the file less often. Cannot exceed BUFFER_CAPACITY.
 const READ_SIZE: usize = BUFFER_CAPACITY / 2;
-/// Maximal number of character that can be looked ahead. Cannot exceed READ_SIZE.
-const MAX_LOOKAHEAD: usize = BUFFER_CAPACITY / 2;
 
 // =========== Structures ===========
 
@@ -22,7 +20,7 @@ pub struct FileReader {
     /// The file to read from
     file: File,
     /// Buffer to store looked ahead characters
-    buffer: RingBuffer<char>,
+    buffer: CharRingBuffer,
 }
 
 // =========== Implementations ===========
@@ -31,7 +29,7 @@ impl FileReader {
     pub fn new(file: File) -> Self {
         Self {
             file,
-            buffer: RingBuffer::new(BUFFER_CAPACITY),
+            buffer: CharRingBuffer::new(BUFFER_CAPACITY),
         }
     }
 
@@ -47,7 +45,7 @@ impl FileReader {
     fn load_chars(&mut self) -> usize {
         // Check if there is enough space in the buffer, we don't want to override chars that weren't consumed.
         assert!(
-            self.buffer.size() + READ_SIZE < BUFFER_CAPACITY,
+            self.buffer.len() + READ_SIZE < BUFFER_CAPACITY,
             "Not enough space in buffer."
         );
 
@@ -74,7 +72,7 @@ impl FileReader {
                 // Check that it is a valid char
                 match char_buf.try_into_char() {
                     Ok(c) => {
-                        self.buffer.push(c).expect("Buffer overflow");
+                        self.buffer.push_back(c).expect("Buffer overflow");
                         // We can start the next char
                         char_i = 0;
                         char_buf = [0u8; 4];
@@ -102,7 +100,7 @@ impl Iterator for FileReader {
             self.load_chars();
         }
 
-        self.buffer.pop()
+        self.buffer.pop_front()
     }
 }
 
@@ -117,19 +115,38 @@ impl Peek for FileReader {
     }
 
     fn peek_nth(&mut self, n: usize) -> Option<Self::Item> {
-        // If n is greater than the current size of the buffer, load more chars
-        assert!(
-            n < MAX_LOOKAHEAD,
-            "Given N is greater than maximal allowed lookahead."
-        );
-
-        if n > self.buffer.size() {
+        if n > self.buffer.len() {
             self.load_chars();
         }
 
         self.buffer.peek_nth(n)
     }
 }
+
+impl MatchToken for FileReader {
+    fn match_str(&self, string: &'static str) -> bool {
+        if self.buffer.len() < string.len() {
+            // We will need to expand it at one point. Do it now, that way the the buffer can match it in one go if possible
+            self.load_chars();
+
+            if self.buffer.len() < string.len() {
+                // If still too small, then it can't match
+                return false;
+            }
+        }
+
+
+
+
+
+
+
+        false
+    }
+}
+
+
+
 
 #[cfg(test)]
 mod tests {

@@ -1,27 +1,25 @@
-#[macro_export]
-macro_rules! define_tokens {
-    ($($word:expr => $name: ident), *) => {
-        enum TokenType {
-            define_tokens_inner!($($word => $name), *);
-        }
-    };
-}
-macro_rules! define_tokens_inner {
+// #[macro_export]
+// macro_rules! define_keywords {
+//     ($($word:expr => $name: ident), *) => {
+//         enum TokenType {
+//             define_tokens_inner!($($word => $name), *);
+//         }
+//     };
+// }
+// macro_rules! define_tokens_inner {
 
-    ($word:expr => $name: ident, $($rest:tt)*) => {
-        name,
-        define_tokens!($($rest)*);
-    };
+//     ($word:expr => $name: ident, $($rest:tt)*) => {
+//         name,
+//         define_tokens!($($rest)*);
+//     };
 
-}
+// }
 
-define_tokens! {
-    // Keywords
-    "if" => If,
-    "else" => Else,
-    "while" => While
-}
+// define_keywords! {
+//     // Keywords (reserved, can't be used for identifier)
+//     If => "if",
+// }
 
-fn test() {
-    TokenType::While
-}
+// fn test() {
+//     TokenType::
+// }
