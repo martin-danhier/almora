@@ -1,9 +1,2 @@
-mod char_reader;
+mod input;
 mod lexer;
-mod parser;
-mod types;
-
-pub use char_reader::*;
-pub use lexer::*;
-pub use types::*;
-pub use parser::*;

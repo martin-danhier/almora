@@ -1,5 +1,4 @@
-mod almora;
-mod parser_lib;
 mod utils;
+mod parser_lib;
 
 fn main() {}

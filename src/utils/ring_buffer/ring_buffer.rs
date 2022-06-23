@@ -35,7 +35,14 @@ impl<T: Copy + Clone + Debug + Display> RingBuffer<T> {
         self.size
     }
 
+    #[inline]
+    pub fn empty(&self) -> bool {
+        self.size == 0
+    }
+
     // Methods
+
+    /// Append a value at the end of the buffer
     pub fn push(&mut self, c: T) -> Result<(), RingBufferError<T>> {
         if self.size() == self.capacity() {
             return Err(RingBufferError::NotEnoughSpace(c));
@@ -53,8 +60,9 @@ impl<T: Copy + Clone + Debug + Display> RingBuffer<T> {
         Ok(())
     }
 
+    /// Remove the value at the start of the buffer and return it.
     pub fn pop(&mut self) -> Option<T> {
-        if self.size() == 0 {
+        if self.empty() {
             return None;
         }
 
@@ -71,7 +79,7 @@ impl<T: Copy + Clone + Debug + Display> RingBuffer<T> {
     }
 
     pub fn peek(&self) -> Option<T> {
-        if self.size() == 0 {
+        if self.empty() {
             return None;
         }
 
@@ -79,7 +87,7 @@ impl<T: Copy + Clone + Debug + Display> RingBuffer<T> {
     }
 
     pub fn peek_nth(&self, n: usize) -> Option<T> {
-        if self.size() == 0 {
+        if self.empty(){
             return None;
         }
 
