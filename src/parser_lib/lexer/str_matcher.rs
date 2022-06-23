@@ -40,7 +40,7 @@ impl StrMatcher {
     }
 }
 
-impl<R: MatchStr + Stream<char>> MatchToken<R> for StrMatcher {
+impl<R: MatchStr > MatchToken<R> for StrMatcher {
     fn test(&self, loc: &Location, reader: &mut R) -> ParseResult {
         // Test to see if the string is in the input at the given location
         let success = reader.match_str(loc.index(), self.value)?;

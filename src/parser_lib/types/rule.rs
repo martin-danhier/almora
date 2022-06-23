@@ -25,7 +25,7 @@ impl<R: MatchStr> MatchToken<R> for Rule<R> {
     }
 }
 
-impl<R: 'static + MatchStr + Stream<char>> Rule<R> {
+impl<R: 'static + MatchStr > Rule<R> {
     /// Creates a new Rule from a Matcher.
     pub fn new(matcher: Rc<dyn MatchToken<R>>) -> Self {
         Self { matcher }

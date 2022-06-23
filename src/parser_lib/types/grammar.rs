@@ -38,7 +38,7 @@ pub struct GrammarBuilder<R: MatchStr> {
     grammar: Grammar<R>,
 }
 
-impl<R: 'static + MatchStr + Stream<char>> GrammarBuilder<R> {
+impl<R: 'static + MatchStr > GrammarBuilder<R> {
     pub fn new() -> Self {
         let grammar = Grammar::<R> {
             root: None,
@@ -81,7 +81,7 @@ macro_rules! define_grammar {
 
             // Create the function
             #[allow(unused)]
-            pub fn define_grammar<R: 'static + MatchStr + Stream<char>>() -> Grammar<R> {
+            pub fn define_grammar<R: 'static + MatchStr >() -> Grammar<R> {
                 let mut builder = GrammarBuilder::<R>::new();
 
                 let root: Rule<R> = $body(&mut builder);

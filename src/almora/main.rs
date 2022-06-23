@@ -2,7 +2,7 @@ use crate::parser_lib::{MatchStr, Stream};
 
 use super::grammar::*;
 
-pub fn compile<R: 'static + MatchStr + Stream<char>>() {
+pub fn compile<R: 'static + MatchStr >() {
     let grammar = almora::define_grammar::<R>();
     println!("{}", grammar);
 }

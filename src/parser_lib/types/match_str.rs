@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use super::{ParserError, Stream};
 
-pub trait MatchStr: Debug {
+pub trait MatchStr: Debug + Stream<char> {
     /// Compares the given string `s` with the input at the position `pos`.
     ///
     /// The position is an absolute index from the start of the input.

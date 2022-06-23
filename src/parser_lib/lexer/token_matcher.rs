@@ -4,17 +4,17 @@ use crate::parser_lib::{CreateParseResult, Location, MatchStr, MatchToken, Parse
 
 /// In case of match, consumes the input to finish a token.
 #[derive(Debug)]
-pub struct TokenMatcher<R: MatchStr + Stream<char>> {
+pub struct TokenMatcher<R: MatchStr > {
     value: Rc<dyn MatchToken<R>>,
 }
 
-impl<R: MatchStr + Stream<char>> TokenMatcher<R> {
+impl<R: MatchStr > TokenMatcher<R> {
     pub fn new(value: Rc<dyn MatchToken<R>>) -> Self {
         Self { value }
     }
 }
 
-impl<R: MatchStr + Stream<char>> MatchToken<R> for TokenMatcher<R> {
+impl<R: MatchStr > MatchToken<R> for TokenMatcher<R> {
     fn test(&self, loc: &Location, reader: &mut R) -> ParseResult {
         if let Some(res) = self.value.test(loc, reader)? {
             // Consume the input
@@ -28,7 +28,7 @@ impl<R: MatchStr + Stream<char>> MatchToken<R> for TokenMatcher<R> {
     }
 }
 
-impl<R: MatchStr + Stream<char>> Display for TokenMatcher<R> {
+impl<R: MatchStr > Display for TokenMatcher<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.value)
     }
